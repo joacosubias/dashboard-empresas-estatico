@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Análisis de Empresas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1a1a2e; /* Dark background */
+            color: #e0e0e0; /* Light text color */
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #16213e; /* Slightly lighter dark background for container */
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        h1, h2, h3 {
+            color: #0f3460; /* A contrasting blue for headers */
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .company-section {
+            background-color: #0f3460; /* Darker blue for company sections */
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .company-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #16213e;
+            padding-bottom: 10px;
+        }
+        .company-header h2 {
+            margin: 0;
+            color: #e94560; /* Reddish accent for company names */
+        }
+        .semaphor {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-left: 10px;
+            border: 2px solid #e0e0e0;
+        }
+        .semaphor.green { background-color: #4CAF50; }
+        .semaphor.yellow { background-color: #FFC107; }
+        .semaphor.red { background-color: #F44336; }
+
+        .metrics p {
+            margin: 5px 0;
+            font-size: 1.1em;
+        }
+        .charts {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .chart-item {
+            flex: 1 1 calc(50% - 20px); /* Two charts per row on larger screens */
+            min-width: 300px;
+            background-color: #1a1a2e;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .chart-item img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 5px;
+        }
+        .news-section {
+            margin-top: 20px;
+            background-color: #1a1a2e;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .news-item {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px dashed #0f3460;
+        }
+        .news-item:last-child {
+            border-bottom: none;
+        }
+        .news-item h4 {
+            margin: 0 0 5px 0;
+            color: #e94560;
+        }
+        .news-item a {
+            color: #a4e6ff; /* Light blue for links */
+            text-decoration: none;
+        }
+        .news-item a:hover {
+            text-decoration: underline;
+        }
+        .summary-section {
+            margin-top: 20px;
+            background-color: #1a1a2e;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .summary-section h3 {
+            color: #e94560;
+            margin-top: 0;
+            text-align: left;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .charts {
+                flex-direction: column;
+                align-items: center;
+            }
+            .chart-item {
+                flex: 1 1 100%; /* One chart per row on smaller screens */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Dashboard de Análisis de Empresas</h1>
+        <p style="text-align: center; color: #aaa;">Generado el: {{ generation_time }} (UTC)</p> {# AQUI EL CAMBIO #}
+
+        {% if companies %}
+            {% for company in companies %}
+            <div class="company-section">
+                <div class="company-header">
+                    <h2>{{ company.name }} ({{ company.ticker }})</h2>
+                    <span class="semaphor {{ company.semaphor_color }}"></span>
+                </div>
+
+                <div class="metrics">
+                    <p><strong>Precio Actual:</strong> ${{ "{:,.2f}".format(company.current_price) if company.current_price is number else company.current_price }}</p>
+                    <p><strong>P/E Ratio:</strong> {{ "{:,.2f}".format(company.pe_ratio) if company.pe_ratio is number else company.pe_ratio }}</p>
+                    <p><strong>Capitalización Bursátil:</strong> {{ "{:,.0f}".format(company.market_cap) if company.market_cap is number else company.market_cap }} USD</p>
+                    <p><strong>Rendimiento por Dividendo:</strong> {{ company.dividend_yield }}</p>
+                </div>
+
+                <div class="charts">
+                    {# Usamos url_for('static', ...) para referenciar las imágenes guardadas #}
+                    {# Aunque estamos generando estáticamente, Jinja2 procesa url_for para rutas relativas #}
+                    {% if company.chart_6m_url %}
+                    <div class="chart-item">
+                        <img src="{{ company.chart_6m_url }}" alt="Gráfico 6 Meses"> {# Eliminamos url_for para simplicidad en estático #}
+                    </div>
+                    {% endif %}
+                    {% if company.chart_1y_url %}
+                    <div class="chart-item">
+                        <img src="{{ company.chart_1y_url }}" alt="Gráfico 1 Año"> {# Eliminamos url_for para simplicidad en estático #}
+                    </div>
+                    {% endif %}
+                    {% if company.chart_5y_url %}
+                    <div class="chart-item">
+                        <img src="{{ company.chart_5y_url }}" alt="Gráfico 5 Años"> {# Eliminamos url_for para simplicidad en estático #}
+                    </div>
+                    {% endif %}
+                    {% if company.financial_chart_url %}
+                    <div class="chart-item">
+                        <img src="{{ company.financial_chart_url }}" alt="Gráfico Financiero"> {# Eliminamos url_for para simplicidad en estático #}
+                    </div>
+                    {% endif %}
+                </div>
+
+                {% if company.news_articles %}
+                <div class="news-section">
+                    <h3>Últimas Noticias</h3>
+                    {% for article in company.news_articles %}
+                    <div class="news-item">
+                        <h4><a href="{{ article.url }}" target="_blank">{{ article.title }}</a></h4>
+                        <p>{{ article.description }}</p>
+                        <p style="font-size: 0.9em; color: #aaa;">Fuente: {{ article.source.name }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if company.wikipedia_summary %}
+                <div class="summary-section">
+                    <h3>Resumen de Wikipedia</h3>
+                    <p>{{ company.wikipedia_summary }}</p>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% else %}
+            <p style="text-align: center;">No se pudieron cargar los datos de las empresas.</p>
+        {% endif %}
+    </div>
+</body>
+</html>
