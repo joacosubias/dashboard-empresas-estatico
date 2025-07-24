@@ -8,6 +8,7 @@ import matplotlib.ticker as mticker
 from matplotlib.ticker import FuncFormatter
 import google.generativeai as genai
 from newsapi import NewsApiClient
+from datetime import datetime, timedelta
 
 # --- Configurar las APIs ---
 try:
@@ -73,10 +74,42 @@ def generate_chart(data, title, filename, y_label='Precio de Cierre', period='1y
     plt.close()
     return True
 
+# --- NUEVA FUNCIÓN: Obtener precio promedio en un rango de fechas ---
+def get_average_price_around_date(historical_data, target_date, days_window=5):
+    """
+    Obtiene el precio promedio de cierre de los días hábiles
+    en un rango alrededor de una fecha objetivo.
+    historical_data: DataFrame de Yahoo Finance con índice de fecha y columna 'Close'.
+    target_date: Objeto datetime.date o pandas.Timestamp para la fecha central.
+    days_window: Número de días calendario a cada lado de la fecha objetivo
+                 para formar la ventana de búsqueda.
+    """
+    if historical_data.empty:
+        return None
+
+    # Convertir target_date a datetime si no lo es
+    if isinstance(target_date, pd.Timestamp):
+        target_date = target_date.date()
+    elif isinstance(target_date, datetime):
+        target_date = target_date.date()
+
+    start_search_date = target_date - timedelta(days=days_window)
+    end_search_date = target_date + timedelta(days=days_window)
+
+    # Filtrar los datos históricos para el rango de búsqueda
+    # Asegúrate de que el índice sea de tipo datetime
+    if not isinstance(historical_data.index, pd.DatetimeIndex):
+        historical_data.index = pd.to_datetime(historical_data.index)
+
+    window_data = historical_data.loc[str(start_search_date):str(end_search_date), 'Close']
+
+    if not window_data.empty:
+        return window_data.mean()
+    return None
+
+
 # --- Función para obtener noticias con NewsAPI y resumir con Gemini ---
-# Se le pasan más parámetros para el análisis en el prompt
 def get_news_summary_with_gemini(company_name, ticker, max_links=3, current_price=None, change_1y=None, operating_income=None, net_income=None):
-    # Usar 'gemini-1.5-flash' para mayor disponibilidad y eficiencia
     model = genai.GenerativeModel('gemini-1.5-flash')
 
     news_links = []
@@ -147,14 +180,22 @@ def get_news_summary_with_gemini(company_name, ticker, max_links=3, current_pric
             + financial_info_text
         )
 
-        # Generar el resumen con Gemini
+        # --- NUEVOS DEBUG PARA GEMINI ---
+        print(f"DEBUG: Enviando prompt a Gemini para {company_name}. Longitud del prompt: {len(prompt)} caracteres.")
+        print(f"DEBUG: Contenido del prompt (primeras 500 caracteres):\n{prompt[:500]}...")
+
         response = model.generate_content(prompt)
         summary = response.text
+        print(f"DEBUG: Gemini generó resumen para {company_name}.")
+        # --- FIN NUEVOS DEBUG PARA GEMINI ---
+
         return summary, news_links
 
     except Exception as e:
-        print(f"Error al obtener noticias o generar resumen con Gemini para {company_name}: {e}")
-        # En caso de error (ya sea de NewsAPI o de Gemini), intentamos una última vez con Yahoo Finance como fallback
+        # AQUI AGREGAMOS UN PRINT MAS ESPECIFICO PARA CAPTURAR EL ERROR COMPLETO
+        print(f"ERROR FATAL AL OBTENER NOTICIAS O GENERAR RESUMEN CON GEMINI PARA {company_name}: {e}")
+
+        # En caso de error, intentamos un último fallback con Yahoo Finance (solo si el primer intento falló)
         try:
             stock_yf = yf.Ticker(ticker)
             yf_news_items = stock_yf.news
@@ -180,21 +221,30 @@ def get_news_summary_with_gemini(company_name, ticker, max_links=3, current_pric
                     + "\n\n".join(yf_news_for_gemini_prompt)
                     + financial_info_text # Incluir info financiera también en el fallback
                 )
+
+                # --- NUEVOS DEBUG PARA GEMINI (FALLBACK) ---
+                print(f"DEBUG: Enviando prompt de FALLBACK a Gemini para {company_name}. Longitud del prompt: {len(prompt_yf)} caracteres.")
+                print(f"DEBUG: Contenido del prompt de FALLBACK (primeras 500 caracteres):\n{prompt_yf[:500]}...")
+                # --- FIN NUEVOS DEBUG PARA GEMINI (FALLBACK) ---
+
                 response_yf = model.generate_content(prompt_yf)
                 summary_yf = response_yf.text
-                print(f"DEBUG: Fallback a Yahoo Finance para {company_name}. Resumen generado.")
+                print(f"DEBUG: Gemini generó resumen de FALLBACK para {company_name}.")
                 return summary_yf, yf_news_links
             else:
                 return "No se pudieron obtener noticias de la web ni de Yahoo Finance para esta empresa.", []
 
         except Exception as fallback_e:
-            print(f"Error en el fallback de Yahoo Finance para {company_name}: {fallback_e}")
+            print(f"ERROR EN FALLBACK DE YAHOO FINANCE PARA {company_name}: {fallback_e}")
             return "No se pudieron obtener noticias o generar un resumen para esta empresa.", []
 
 
 # --- Función principal para generar el sitio estático ---
 def generate_static_site():
     print("Iniciando la generación del sitio estático...")
+
+    # --- Título de la página ---
+    page_title = "<b>Public Tenants Urbana</b>" # Aquí se define el título
 
     with open('tickers.txt', 'r') as f:
         tickers = [line.strip() for line in f if line.strip()]
@@ -207,17 +257,32 @@ def generate_static_site():
         try:
             stock = yf.Ticker(ticker)
             info = stock.info
-            hist = stock.history(period="5y")
+
+            # Obtener historial de precios para un período más largo y completo
+            # Usamos "max" para asegurar que tenemos todos los datos posibles para los cálculos
+            hist = stock.history(period="max") 
+
+            # Asegúrate de que el índice de 'hist' sea DatetimeIndex para la función get_average_price_around_date
+            if not isinstance(hist.index, pd.DatetimeIndex):
+                hist.index = pd.to_datetime(hist.index)
+
 
             company_name = info.get('longName', ticker)
             sector = info.get('sector', 'N/A')
             industry = info.get('industry', 'N/A')
             current_price = info.get('regularMarketPrice')
 
-            # --- Precios históricos para variación ---
-            price_6m_ago = hist['Close'].iloc[-126] if len(hist) >= 126 else None
-            price_1y_ago = hist['Close'].iloc[-252] if len(hist) >= 252 else None
-            price_5y_ago = hist['Close'].iloc[0] if len(hist) >= 1260 else None
+            # --- Precios históricos para variación (ahora con promedios) ---
+            today = datetime.now().date()
+
+            target_date_6m_ago = today - timedelta(days=6*30) # Aprox. 6 meses calendario
+            target_date_1y_ago = today - timedelta(days=365)   # Aprox. 1 año calendario
+            target_date_5y_ago = today - timedelta(days=5*365) # Aprox. 5 años calendario
+
+            price_6m_ago = get_average_price_around_date(hist, target_date_6m_ago, days_window=7) # Ventana de 7 días (aprox. 1 semana calendario)
+            price_1y_ago = get_average_price_around_date(hist, target_date_1y_ago, days_window=7)
+            price_5y_ago = get_average_price_around_date(hist, target_date_5y_ago, days_window=7)
+
 
             # --- Variaciones porcentuales ---
             change_6m = None
@@ -235,18 +300,21 @@ def generate_static_site():
             # --- Datos financieros ---
             try:
                 financials = stock.financials
-                operating_income = financials.loc['Operating Income'][0] if 'Operating Income' in financials.index else None
-                net_income = financials.loc['Net Income'][0] if 'Net Income' in financials.index else None
+                # Usamos .iloc[0] para acceder a la primera columna por posición, que es el dato más reciente
+                # y verificamos si la Serie no está vacía
+                operating_income = financials.loc['Operating Income'].iloc[0] if 'Operating Income' in financials.index and not financials.loc['Operating Income'].empty else None
+                net_income = financials.loc['Net Income'].iloc[0] if 'Net Income' in financials.index and not financials.loc['Net Income'].empty else None
             except Exception as e:
-                print(f"Error al obtener datos financieros para {ticker}: {e}")
+                print(f"Error al obtener datos financieros (Operating/Net Income) para {ticker}: {e}")
                 operating_income = None
                 net_income = None
 
             try:
                 cash_flow = stock.cashflow
-                ebitda = cash_flow.loc['EBITDA'][0] if 'EBITDA' in cash_flow.index else None
+                # Usamos .iloc[0] para acceder a la primera columna por posición
+                ebitda = cash_flow.loc['EBITDA'].iloc[0] if 'EBITDA' in cash_flow.index and not cash_flow.loc['EBITDA'].empty else None
             except Exception as e:
-                print(f"Error al obtener datos de flujo de caja para {ticker}: {e}")
+                print(f"Error al obtener datos de flujo de caja (EBITDA) para {ticker}: {e}")
                 ebitda = None
 
             # --- OBTENER RESUMEN DE NOTICIAS DE LA WEB (NewsAPI + Gemini) ---
@@ -256,12 +324,13 @@ def generate_static_site():
                 ticker=ticker,
                 max_links=3,
                 current_price=current_price,
-                change_1y=change_1y,
+                change_1y=change_1y, # Usamos el cambio_1y para el análisis de Gemini
                 operating_income=operating_income,
                 net_income=net_income
             )
 
             # --- Generación de gráficos ---
+            # Estos aún usan períodos directos de yfinance, lo cual es apropiado para un gráfico
             hist_1y = stock.history(period="1y")
             hist_6m = stock.history(period="6mo")
             hist_5y = stock.history(period="5y")
@@ -270,30 +339,42 @@ def generate_static_site():
             generate_chart(hist_1y, f'Precio de Cierre (1 Año) - {ticker}', f'{ticker}_1y.png', period='1y')
             generate_chart(hist_5y, f'Precio de Cierre (5 Años) - {ticker}', f'{ticker}_5y.png', period='5y')
 
+            # Generación de gráfico financiero (si hay datos disponibles)
             if not financials.empty:
-                financial_data_for_plot = financials.loc[['Operating Income', 'Net Income']].transpose().iloc[:4]
-                if not financial_data_for_plot.empty:
-                    plt.figure(figsize=(10, 6))
-                    financial_data_for_plot.plot(kind='bar', ax=plt.gca(), color=['#66BB6A', '#FFA726'])
-                    plt.title(f'Ingresos y Beneficios Netos - {ticker}', color='#333333', fontsize=16)
-                    plt.xlabel('Año', color='#555555')
-                    plt.ylabel('Valor ($)', color='#555555')
+                # Verificamos si las columnas existen antes de intentar graficarlas
+                columns_to_plot = []
+                if 'Operating Income' in financials.index:
+                    columns_to_plot.append('Operating Income')
+                if 'Net Income' in financials.index:
+                    columns_to_plot.append('Net Income')
 
-                    formatter = FuncFormatter(lambda x, p: format_financial_value(x))
-                    plt.gca().yaxis.set_major_formatter(formatter)
+                if columns_to_plot:
+                    financial_data_for_plot = financials.loc[columns_to_plot].transpose().iloc[:4]
+                    if not financial_data_for_plot.empty:
+                        plt.figure(figsize=(10, 6))
+                        financial_data_for_plot.plot(kind='bar', ax=plt.gca(), color=['#66BB6A', '#FFA726'][:len(columns_to_plot)])
+                        plt.title(f'Ingresos y Beneficios Netos - {ticker}', color='#333333', fontsize=16)
+                        plt.xlabel('Año', color='#555555')
+                        plt.ylabel('Valor ($)', color='#555555')
 
-                    plt.xticks(rotation=45, ha='right', color='#555555')
-                    plt.yticks(color='#555555')
-                    plt.grid(axis='y', linestyle='--', alpha=0.7)
-                    plt.gca().set_facecolor('#F9F9F9')
-                    plt.gcf().set_facecolor('#FFFFFF')
-                    plt.tight_layout()
-                    plt.savefig(f'public/img/{ticker}_financial.png')
-                    plt.close()
+                        formatter = FuncFormatter(lambda x, p: format_financial_value(x))
+                        plt.gca().yaxis.set_major_formatter(formatter)
+
+                        plt.xticks(rotation=45, ha='right', color='#555555')
+                        plt.yticks(color='#555555')
+                        plt.grid(axis='y', linestyle='--', alpha=0.7)
+                        plt.gca().set_facecolor('#F9F9F9')
+                        plt.gcf().set_facecolor('#FFFFFF')
+                        plt.tight_layout()
+                        plt.savefig(f'public/img/{ticker}_financial.png')
+                        plt.close()
+                    else:
+                        print(f"No hay datos financieros suficientes para el gráfico: {ticker}")
                 else:
-                    print(f"No hay datos financieros suficientes para el gráfico: {ticker}")
+                    print(f"No se encontraron 'Operating Income' o 'Net Income' para graficar para {ticker}.")
             else:
                 print(f"No hay datos financieros para generar el gráfico: {ticker}")
+
 
             # --- Determinar el color del semáforo para la tabla ---
             semaphore_color = "gray"
@@ -334,7 +415,9 @@ def generate_static_site():
             })
 
         except Exception as e:
-            print(f"Error procesando {ticker}: {e}")
+            # Captura cualquier error en el procesamiento de un ticker y registra en la consola
+            print(f"ERROR GENERAL PROCESANDO {ticker}: {e}")
+            # Asegura que el ticker siempre aparezca en la tabla de resumen y en la sección de detalles
             all_company_data.append({
                 'ticker': ticker,
                 'name': f"{ticker} (Error)",
@@ -342,7 +425,7 @@ def generate_static_site():
                 'current_price': 'N/A', 'change_6m': 'N/A',
                 'change_1y': 'N/A', 'change_5y': 'N/A',
                 'operating_income': 'N/A', 'net_income': 'N/A', 'ebitda': 'N/A',
-                'news_summary': 'No se pudieron obtener datos o un resumen de noticias para esta empresa debido a un error.',
+                'news_summary': f'No se pudieron obtener datos completos o un resumen de noticias para esta empresa debido a un error: {e}',
                 'news_articles': []
             })
             all_companies_summary.append({
@@ -543,7 +626,8 @@ def generate_static_site():
     template = env.get_template('index.html')
     output = template.render(
         companies=all_company_data,
-        all_companies_summary=all_companies_summary
+        all_companies_summary=all_companies_summary,
+        page_title=page_title # Pasamos el título a la plantilla
     )
 
     with open('public/index.html', 'w') as f:

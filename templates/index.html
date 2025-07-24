@@ -3,122 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Análisis de Empresas</title>
+    <title>{{ page_title | striptags }}</title> {# Título de la pestaña del navegador #}
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
     <div class="container">
-        <h1>Dashboard de Análisis de Empresas</h1>
+        <h1>{{ page_title | safe }}</h1> {# Título principal en la página #}
 
-        <h2>Resumen General de Empresas</h2>
+        <h2>Resumen General del Mercado</h2>
         <table class="summary-table">
             <thead>
                 <tr>
-                    <th>Empresa (Ticker)</th>
+                    <th>Ticker</th>
+                    <th>Nombre</th>
                     <th>Precio Actual</th>
-                    <th>Var. 6M</th>
-                    <th>Var. 1 Año</th>
-                    <th>Var. 5 Años</th>
-                    <th>Estado</th>
+                    <th>Cambio 6m</th>
+                    <th>Cambio 1y</th>
+                    <th>Cambio 5y</th>
                 </tr>
             </thead>
             <tbody>
                 {% for company in all_companies_summary %}
                 <tr class="semaphore-{{ company.semaphore_color }}">
-                    <td>
-                        <a href="#{{ company.ticker | lower }}" style="color: #333333; text-decoration: none; font-weight: bold;">
-                            {{ company.name }} ({{ company.ticker }})
-                        </a>
-                    </td>
+                    <td><a href="#{{ company.ticker }}">{{ company.ticker }}</a></td>
+                    <td>{{ company.name }}</td>
                     <td>{{ company.current_price }}</td>
-                    <td class="{% if company.change_6m != 'N/A' %}{% if company.change_6m | float > 0 %}change-positive{% elif company.change_6m | float < 0 %}change-negative{% else %}change-neutral{% endif %}{% endif %}">
+                    <td class="{% if company.change_6m != 'N/A' %}{% if company.change_6m.replace('%','') | float > 0 %}change-positive{% elif company.change_6m.replace('%','') | float < 0 %}change-negative{% else %}change-neutral{% endif %}{% endif %}">
                         {{ company.change_6m }}
                     </td>
-                    <td class="{% if company.change_1y != 'N/A' %}{% if company.change_1y | float > 0 %}change-positive{% elif company.change_1y | float < 0 %}change-negative{% else %}change-neutral{% endif %}{% endif %}">
+                    <td class="{% if company.change_1y != 'N/A' %}{% if company.change_1y.replace('%','') | float > 0 %}change-positive{% elif company.change_1y.replace('%','') | float < 0 %}change-negative{% else %}change-neutral{% endif %}{% endif %}">
                         {{ company.change_1y }}
                     </td>
-                    <td class="{% if company.change_5y != 'N/A' %}{% if company.change_5y | float > 0 %}change-positive{% elif company.change_5y | float < 0 %}change-negative{% else %}change-neutral{% endif %}{% endif %}">
+                    <td class="{% if company.change_5y != 'N/A' %}{% if company.change_5y.replace('%','') | float > 0 %}change-positive{% elif company.change_5y.replace('%','') | float < 0 %}change-negative{% else %}change-neutral{% endif %}{% endif %}">
                         {{ company.change_5y }}
-                    </td>
-                    <td>
-                        <span style="font-size: 1.5em;">&#9679;</span>
                     </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
 
-        <h2>Detalle por Empresa</h2>
-        {% if companies %}
-            {% for company in companies %}
-            <div class="company-section" id="{{ company.ticker | lower }}">
-                <h3>{{ company.name }} ({{ company.ticker }})</h3>
-                <div class="company-info">
-                    <p><strong>Sector:</strong> {{ company.sector }}</p>
-                    <p><strong>Industria:</strong> {{ company.industry }}</p>
-                    <p><strong>Precio Actual:</strong> {{ company.current_price }}</p>
-                    <p><strong>Variación 6 Meses:</strong> {{ company.change_6m }}</p>
-                    <p><strong>Variación 1 Año:</strong> {{ company.change_1y }}</p>
-                    <p><strong>Variación 5 Años:</strong> {{ company.change_5y }}</p>
-                    <p><strong>Operating Income:</strong> {{ company.operating_income }}</p>
-                    <p><strong>Net Income:</strong> {{ company.net_income }}</p>
-                    <p><strong>EBITDA:</strong> {{ company.ebitda }}</p>
-                </div>
-
-                <div class="charts-grid">
-                    <div class="chart-item">
-                        <img src="img/{{ company.ticker }}_6m.png" alt="Gráfico de {{ company.ticker }} 6 Meses">
-                    </div>
-                    <div class="chart-item">
-                        <img src="img/{{ company.ticker }}_1y.png" alt="Gráfico de {{ company.ticker }} 1 Año">
-                    </div>
-                    <div class="chart-item">
-                        <img src="img/{{ company.ticker }}_5y.png" alt="Gráfico de {{ company.ticker }} 5 Años">
-                    </div>
-                    <div class="chart-item">
-                        <img src="img/{{ company.ticker }}_financial.png" alt="Gráfico Financiero de {{ company.ticker }}">
-                    </div>
-                </div>
-
-                <div class="news-section">
-                    <h4>Noticias Recientes</h4>
-                    {% if company.news_summary %}
-                        <p>{{ company.news_summary }}</p>
-                    {% else %}
-                        <p>No se pudo obtener un resumen de noticias para esta empresa.</p>
-                    {% endif %}
-
-                    {% if company.news_articles %}
-                        <ul>
-                            {% for article in company.news_articles[:3] %} {# Limitar a 3 enlaces aquí #}
-                                <li>
-                                    <a href="{{ article.url }}" target="_blank">{{ article.title }}</a>
-                                    {% if article.publisher %}<span class="source"> ({{ article.publisher }})</span>{% endif %}
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    {% else %}
-                        <p>No hay enlaces de noticias disponibles.</p>
-                    {% endif %}
-                </div>
-
-                {#
-                {% if company.wikipedia_summary %}
-                <div class="wikipedia-summary-section">
-                    <h4>Resumen de Wikipedia</h4>
-                    <p>{{ company.wikipedia_summary }}</p>
-                </div>
-                {% endif %}
-                #}
+        {% for company in companies %}
+        <section class="company-section" id="{{ company.ticker }}">
+            <h3 id="{{ company.ticker }}">{{ company.name }} ({{ company.ticker }})</h3>
+            <div class="company-info">
+                <p><strong>Sector:</strong> {{ company.sector }}</p>
+                <p><strong>Industria:</strong> {{ company.industry }}</p>
+                <p><strong>Precio Actual:</strong> {{ company.current_price }}</p>
+                <p><strong>Cambio 6 Meses:</strong> <span class="{% if company.change_6m != 'N/A' %}{% if company.change_6m.replace('%','') | float > 0 %}change-positive{% elif company.change_6m.replace('%','') | float < 0 %}change-negative{% else %}change-neutral{% endif %}{% endif %}">{{ company.change_6m }}</span></p>
+                <p><strong>Cambio 1 Año:</strong> <span class="{% if company.change_1y != 'N/A' %}{% if company.change_1y.replace('%','') | float > 0 %}change-positive{% elif company.change_1y.replace('%','') | float < 0 %}change-negative{% else %}change-neutral{% endif %}{% endif %}">{{ company.change_1y }}</span></p>
+                <p><strong>Cambio 5 Años:</strong> <span class="{% if company.change_5y != 'N/A' %}{% if company.change_5y.replace('%','') | float > 0 %}change-positive{% elif company.change_5y.replace('%','') | float < 0 %}change-negative{% else %}change-neutral{% endif %}{% endif %}">{{ company.change_5y }}</span></p>
+                <p><strong>Ingresos Operativos Recientes:</strong> {{ company.operating_income }}</p>
+                <p><strong>Ingreso Neto Reciente:</strong> {{ company.net_income }}</p>
+                <p><strong>EBITDA Reciente:</strong> {{ company.ebitda }}</p>
             </div>
-            {% endfor %}
-        {% else %}
-            <p style="text-align: center; color: #555555;">No se pudieron cargar los datos de las empresas.</p>
-        {% endif %}
-    </div>
 
-    <footer>
-        <p>Datos obtenidos de Yahoo Finance. Resúmenes de noticias generados por Google Gemini.</p>
-    </footer>
+            <div class="news-section">
+                <h4>Resumen de Noticias (por Gemini):</h4>
+                <p>{{ company.news_summary }}</p>
+                {% if company.news_articles %}
+                    <h4>Artículos Citados:</h4>
+                    {% for article in company.news_articles %}
+                        <div class="news-item">
+                            <a href="{{ article.url }}" target="_blank">{{ article.title }}</a>
+                            {% if article.publisher %}<span class="source"> ({{ article.publisher }})</span>{% endif %}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-item">
+                    <img src="img/{{ company.ticker }}_6m.png" alt="Gráfico de 6 meses para {{ company.ticker }}">
+                </div>
+                <div class="chart-item">
+                    <img src="img/{{ company.ticker }}_1y.png" alt="Gráfico de 1 año para {{ company.ticker }}">
+                </div>
+                <div class="chart-item">
+                    <img src="img/{{ company.ticker }}_5y.png" alt="Gráfico de 5 años para {{ company.ticker }}">
+                </div>
+                <div class="chart-item">
+                    <img src="img/{{ company.ticker }}_financial.png" alt="Gráfico financiero para {{ company.ticker }}">
+                </div>
+            </div>
+        </section>
+        {% endfor %}
+
+        <footer>
+            <p>&copy; 2025 Informe Bursátil. Datos proporcionados por Yahoo Finance, NewsAPI y Google Gemini.</p>
+        </footer>
+    </div>
 </body>
 </html>
