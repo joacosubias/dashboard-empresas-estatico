@@ -3,677 +3,686 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard de Análisis de Empresas</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #1a1a2e; /* Dark background */
-            color: #e0e0e0; /* Light text color */
-            margin: 0;
-            padding: 20px;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #16213e; /* Slightly lighter dark background for container */
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        }
-        h1, h2, h3 {
-            color: #0f3460; /* A contrasting blue for headers */
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .company-section {
-            background-color: #0f3460; /* Darker blue for company sections */
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 30px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-        .company-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 15px;
-            border-bottom: 1px solid #16213e;
-            padding-bottom: 10px;
-        }
-        .company-header h2 {
-            margin: 0;
-            color: #e94560; /* Reddish accent for company names */
-        }
-        .semaphor {
-            width: 25px;
-            height: 25px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-left: 10px;
-            border: 2px solid #e0e0e0;
-        }
-        .semaphor.green { background-color: #4CAF50; }
-        .semaphor.yellow { background-color: #FFC107; }
-        .semaphor.red { background-color: #F44336; }
-
-        .metrics p {
-            margin: 5px 0;
-            font-size: 1.1em;
-        }
-        .charts {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            justify-content: center;
-            margin-top: 20px;
-        }
-        .chart-item {
-            flex: 1 1 calc(50% - 20px); /* Two charts per row on larger screens */
-            min-width: 300px;
-            background-color: #1a1a2e;
-            padding: 15px;
-            border-radius: 5px;
-            text-align: center;
-        }
-        .chart-item img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 5px;
-        }
-        .news-section {
-            margin-top: 20px;
-            background-color: #1a1a2e;
-            padding: 15px;
-            border-radius: 5px;
-        }
-        .news-item {
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px dashed #0f3460;
-        }
-        .news-item:last-child {
-            border-bottom: none;
-        }
-        .news-item h4 {
-            margin: 0 0 5px 0;
-            color: #e94560;
-        }
-        .news-item a {
-            color: #a4e6ff; /* Light blue for links */
-            text-decoration: none;
-        }
-        .news-item a:hover {
-            text-decoration: underline;
-        }
-        .summary-section {
-            margin-top: 20px;
-            background-color: #1a1a2e;
-            padding: 15px;
-            border-radius: 5px;
-        }
-        .summary-section h3 {
-            color: #e94560;
-            margin-top: 0;
-            text-align: left;
-        }
-
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
-            .charts {
-                flex-direction: column;
-                align-items: center;
-            }
-            .chart-item {
-                flex: 1 1 100%; /* One chart per row on smaller screens */
-            }
-        }
-    </style>
+    <title>Análisis de Empresas</title>
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
     <div class="container">
         <h1>Dashboard de Análisis de Empresas</h1>
-        <p style="text-align: center; color: #aaa;">Generado el: 24/07/2025 15:39 (UTC)</p> 
 
+        <h2>Resumen General de Empresas</h2>
+        <table class="summary-table">
+            <thead>
+                <tr>
+                    <th>Empresa (Ticker)</th>
+                    <th>Precio Actual</th>
+                    <th>Var. 6M</th>
+                    <th>Var. 1 Año</th>
+                    <th>Var. 5 Años</th>
+                    <th>Estado</th> </tr>
+            </thead>
+            <tbody>
+                
+                <tr class="semaphore-red">
+                    <td>
+                        <a href="#cdw" style="color: #333333; text-decoration: none; font-weight: bold;">
+                            CDW Corporation (CDW)
+                        </a>
+                    </td>
+                    <td>$181.39</td>
+                    <td class="change-neutral">
+                        -7.53%
+                    </td>
+                    <td class="change-neutral">
+                        -20.16%
+                    </td>
+                    <td class="">
+                        N/A
+                    </td>
+                    <td>
+                        <span style="font-size: 1.5em;">&#9679;</span> </td>
+                </tr>
+                
+                <tr class="semaphore-red">
+                    <td>
+                        <a href="#rhi" style="color: #333333; text-decoration: none; font-weight: bold;">
+                            Robert Half Inc. (RHI)
+                        </a>
+                    </td>
+                    <td>$39.78</td>
+                    <td class="change-neutral">
+                        -42.27%
+                    </td>
+                    <td class="change-neutral">
+                        -36.32%
+                    </td>
+                    <td class="">
+                        N/A
+                    </td>
+                    <td>
+                        <span style="font-size: 1.5em;">&#9679;</span> </td>
+                </tr>
+                
+                <tr class="semaphore-red">
+                    <td>
+                        <a href="#kex" style="color: #333333; text-decoration: none; font-weight: bold;">
+                            Kirby Corporation (KEX)
+                        </a>
+                    </td>
+                    <td>$116.39</td>
+                    <td class="change-neutral">
+                        6.30%
+                    </td>
+                    <td class="change-neutral">
+                        -7.24%
+                    </td>
+                    <td class="">
+                        N/A
+                    </td>
+                    <td>
+                        <span style="font-size: 1.5em;">&#9679;</span> </td>
+                </tr>
+                
+                <tr class="semaphore-gray">
+                    <td>
+                        <a href="#bwfg" style="color: #333333; text-decoration: none; font-weight: bold;">
+                            BWFG (Error) (BWFG)
+                        </a>
+                    </td>
+                    <td>N/A</td>
+                    <td class="">
+                        N/A
+                    </td>
+                    <td class="">
+                        N/A
+                    </td>
+                    <td class="">
+                        N/A
+                    </td>
+                    <td>
+                        <span style="font-size: 1.5em;">&#9679;</span> </td>
+                </tr>
+                
+                <tr class="semaphore-green">
+                    <td>
+                        <a href="#cae" style="color: #333333; text-decoration: none; font-weight: bold;">
+                            CAE Inc. (CAE)
+                        </a>
+                    </td>
+                    <td>$28.41</td>
+                    <td class="change-neutral">
+                        16.63%
+                    </td>
+                    <td class="change-neutral">
+                        53.32%
+                    </td>
+                    <td class="">
+                        N/A
+                    </td>
+                    <td>
+                        <span style="font-size: 1.5em;">&#9679;</span> </td>
+                </tr>
+                
+                <tr class="semaphore-yellow">
+                    <td>
+                        <a href="#ame" style="color: #333333; text-decoration: none; font-weight: bold;">
+                            AMETEK, Inc. (AME)
+                        </a>
+                    </td>
+                    <td>$179.95</td>
+                    <td class="change-neutral">
+                        -5.17%
+                    </td>
+                    <td class="change-neutral">
+                        5.40%
+                    </td>
+                    <td class="">
+                        N/A
+                    </td>
+                    <td>
+                        <span style="font-size: 1.5em;">&#9679;</span> </td>
+                </tr>
+                
+                <tr class="semaphore-gray">
+                    <td>
+                        <a href="#wfc" style="color: #333333; text-decoration: none; font-weight: bold;">
+                            WFC (Error) (WFC)
+                        </a>
+                    </td>
+                    <td>N/A</td>
+                    <td class="">
+                        N/A
+                    </td>
+                    <td class="">
+                        N/A
+                    </td>
+                    <td class="">
+                        N/A
+                    </td>
+                    <td>
+                        <span style="font-size: 1.5em;">&#9679;</span> </td>
+                </tr>
+                
+                <tr class="semaphore-yellow">
+                    <td>
+                        <a href="#dpz" style="color: #333333; text-decoration: none; font-weight: bold;">
+                            Domino's Pizza, Inc. (DPZ)
+                        </a>
+                    </td>
+                    <td>$479.20</td>
+                    <td class="change-neutral">
+                        7.87%
+                    </td>
+                    <td class="change-neutral">
+                        15.00%
+                    </td>
+                    <td class="">
+                        N/A
+                    </td>
+                    <td>
+                        <span style="font-size: 1.5em;">&#9679;</span> </td>
+                </tr>
+                
+                <tr class="semaphore-gray">
+                    <td>
+                        <a href="#pvbc" style="color: #333333; text-decoration: none; font-weight: bold;">
+                            PVBC (Error) (PVBC)
+                        </a>
+                    </td>
+                    <td>N/A</td>
+                    <td class="">
+                        N/A
+                    </td>
+                    <td class="">
+                        N/A
+                    </td>
+                    <td class="">
+                        N/A
+                    </td>
+                    <td>
+                        <span style="font-size: 1.5em;">&#9679;</span> </td>
+                </tr>
+                
+                <tr class="semaphore-gray">
+                    <td>
+                        <a href="#san" style="color: #333333; text-decoration: none; font-weight: bold;">
+                            SAN (Error) (SAN)
+                        </a>
+                    </td>
+                    <td>N/A</td>
+                    <td class="">
+                        N/A
+                    </td>
+                    <td class="">
+                        N/A
+                    </td>
+                    <td class="">
+                        N/A
+                    </td>
+                    <td>
+                        <span style="font-size: 1.5em;">&#9679;</span> </td>
+                </tr>
+                
+                <tr class="semaphore-red">
+                    <td>
+                        <a href="#aapl" style="color: #333333; text-decoration: none; font-weight: bold;">
+                            Apple Inc. (AAPL)
+                        </a>
+                    </td>
+                    <td>$215.09</td>
+                    <td class="change-neutral">
+                        -3.60%
+                    </td>
+                    <td class="change-neutral">
+                        -3.96%
+                    </td>
+                    <td class="">
+                        N/A
+                    </td>
+                    <td>
+                        <span style="font-size: 1.5em;">&#9679;</span> </td>
+                </tr>
+                
+            </tbody>
+        </table>
+
+        <h2>Detalle por Empresa</h2>
         
             
-            <div class="company-section">
-                <div class="company-header">
-                    <h2>CDW Corporation (CDW)</h2>
-                    <span class="semaphor green"></span>
+            <div class="company-section" id="cdw">
+                <h3>CDW Corporation (CDW)</h3>
+                <div class="company-info">
+                    <p><strong>Sector:</strong> Technology</p>
+                    <p><strong>Industria:</strong> Information Technology Services</p>
+                    <p><strong>Precio Actual:</strong> $181.39</p>
+                    <p><strong>Variación 6 Meses:</strong> -7.53%</p>
+                    <p><strong>Variación 1 Año:</strong> -20.16%</p>
+                    <p><strong>Variación 5 Años:</strong> N/A</p>
+                    <p><strong>Operating Income:</strong> $1.65B</p>
+                    <p><strong>Net Income:</strong> $1.08B</p>
+                    <p><strong>EBITDA:</strong> N/A</p>
                 </div>
 
-                <div class="metrics">
-                    <p><strong>Precio Actual:</strong> $181.27</p>
-                    <p><strong>P/E Ratio:</strong> 22.46</p>
-                    <p><strong>Capitalización Bursátil:</strong> 23,870,539,776 USD</p>
-                    <p><strong>Rendimiento por Dividendo:</strong> 138.00%</p>
-                </div>
-
-                <div class="charts">
-                    
-                    
-                    
+                <div class="charts-grid">
                     <div class="chart-item">
-                        <img src="img/CDW_6m.png" alt="Gráfico 6 Meses"> 
+                        <img src="img/CDW_6m.png" alt="Gráfico de CDW 6 Meses">
                     </div>
-                    
-                    
                     <div class="chart-item">
-                        <img src="img/CDW_1y.png" alt="Gráfico 1 Año"> 
+                        <img src="img/CDW_1y.png" alt="Gráfico de CDW 1 Año">
                     </div>
-                    
-                    
                     <div class="chart-item">
-                        <img src="img/CDW_5y.png" alt="Gráfico 5 Años"> 
+                        <img src="img/CDW_5y.png" alt="Gráfico de CDW 5 Años">
                     </div>
-                    
-                    
                     <div class="chart-item">
-                        <img src="img/CDW_financial.png" alt="Gráfico Financiero"> 
+                        <img src="img/CDW_financial.png" alt="Gráfico Financiero de CDW">
                     </div>
-                    
                 </div>
 
                 
 
                 
-                <div class="summary-section">
-                    <h3>Resumen de Wikipedia</h3>
+                <div class="wikipedia-summary-section">
+                    <h4>Resumen de Wikipedia</h4>
                     <p>Resumen no disponible.</p>
                 </div>
                 
             </div>
             
-            <div class="company-section">
-                <div class="company-header">
-                    <h2>Robert Half Inc. (RHI)</h2>
-                    <span class="semaphor green"></span>
+            <div class="company-section" id="rhi">
+                <h3>Robert Half Inc. (RHI)</h3>
+                <div class="company-info">
+                    <p><strong>Sector:</strong> Industrials</p>
+                    <p><strong>Industria:</strong> Staffing & Employment Services</p>
+                    <p><strong>Precio Actual:</strong> $39.78</p>
+                    <p><strong>Variación 6 Meses:</strong> -42.27%</p>
+                    <p><strong>Variación 1 Año:</strong> -36.32%</p>
+                    <p><strong>Variación 5 Años:</strong> N/A</p>
+                    <p><strong>Operating Income:</strong> $241.47M</p>
+                    <p><strong>Net Income:</strong> $251.60M</p>
+                    <p><strong>EBITDA:</strong> N/A</p>
                 </div>
 
-                <div class="metrics">
-                    <p><strong>Precio Actual:</strong> $40.35</p>
-                    <p><strong>P/E Ratio:</strong> 23.06</p>
-                    <p><strong>Capitalización Bursátil:</strong> 4,122,317,312 USD</p>
-                    <p><strong>Rendimiento por Dividendo:</strong> 557.00%</p>
-                </div>
-
-                <div class="charts">
-                    
-                    
-                    
+                <div class="charts-grid">
                     <div class="chart-item">
-                        <img src="img/RHI_6m.png" alt="Gráfico 6 Meses"> 
+                        <img src="img/RHI_6m.png" alt="Gráfico de RHI 6 Meses">
                     </div>
-                    
-                    
                     <div class="chart-item">
-                        <img src="img/RHI_1y.png" alt="Gráfico 1 Año"> 
+                        <img src="img/RHI_1y.png" alt="Gráfico de RHI 1 Año">
                     </div>
-                    
-                    
                     <div class="chart-item">
-                        <img src="img/RHI_5y.png" alt="Gráfico 5 Años"> 
+                        <img src="img/RHI_5y.png" alt="Gráfico de RHI 5 Años">
                     </div>
-                    
-                    
                     <div class="chart-item">
-                        <img src="img/RHI_financial.png" alt="Gráfico Financiero"> 
+                        <img src="img/RHI_financial.png" alt="Gráfico Financiero de RHI">
                     </div>
-                    
                 </div>
 
                 
 
                 
-                <div class="summary-section">
-                    <h3>Resumen de Wikipedia</h3>
+                <div class="wikipedia-summary-section">
+                    <h4>Resumen de Wikipedia</h4>
                     <p>Resumen no disponible.</p>
                 </div>
                 
             </div>
             
-            <div class="company-section">
-                <div class="company-header">
-                    <h2>Kirby Corporation (KEX)</h2>
-                    <span class="semaphor green"></span>
+            <div class="company-section" id="kex">
+                <h3>Kirby Corporation (KEX)</h3>
+                <div class="company-info">
+                    <p><strong>Sector:</strong> Industrials</p>
+                    <p><strong>Industria:</strong> Marine Shipping</p>
+                    <p><strong>Precio Actual:</strong> $116.39</p>
+                    <p><strong>Variación 6 Meses:</strong> 6.30%</p>
+                    <p><strong>Variación 1 Año:</strong> -7.24%</p>
+                    <p><strong>Variación 5 Años:</strong> N/A</p>
+                    <p><strong>Operating Income:</strong> $453.19M</p>
+                    <p><strong>Net Income:</strong> $286.71M</p>
+                    <p><strong>EBITDA:</strong> N/A</p>
                 </div>
 
-                <div class="metrics">
-                    <p><strong>Precio Actual:</strong> $115.59</p>
-                    <p><strong>P/E Ratio:</strong> 22.84</p>
-                    <p><strong>Capitalización Bursátil:</strong> 6,484,481,024 USD</p>
-                    <p><strong>Rendimiento por Dividendo:</strong> N/A</p>
-                </div>
-
-                <div class="charts">
-                    
-                    
-                    
+                <div class="charts-grid">
                     <div class="chart-item">
-                        <img src="img/KEX_6m.png" alt="Gráfico 6 Meses"> 
+                        <img src="img/KEX_6m.png" alt="Gráfico de KEX 6 Meses">
                     </div>
-                    
-                    
                     <div class="chart-item">
-                        <img src="img/KEX_1y.png" alt="Gráfico 1 Año"> 
+                        <img src="img/KEX_1y.png" alt="Gráfico de KEX 1 Año">
                     </div>
-                    
-                    
                     <div class="chart-item">
-                        <img src="img/KEX_5y.png" alt="Gráfico 5 Años"> 
+                        <img src="img/KEX_5y.png" alt="Gráfico de KEX 5 Años">
                     </div>
-                    
-                    
                     <div class="chart-item">
-                        <img src="img/KEX_financial.png" alt="Gráfico Financiero"> 
+                        <img src="img/KEX_financial.png" alt="Gráfico Financiero de KEX">
                     </div>
-                    
                 </div>
 
                 
-                <div class="news-section">
-                    <h3>Últimas Noticias</h3>
-                    
-                    <div class="news-item">
-                        <h4><a href="http://hipertextual.com/2025/07/todo-lo-que-hay-que-recordar-antes-de-ver-jurassic-world-4-el-renacer" target="_blank">Todo lo que hay que recordar antes de ver ‘Jurassic World 4: El Renacer’</a></h4>
-                        <p>Jurassic World 4: El renacer es, en muchos sentidos, heredera de la clásica Parque Jurásico de 1993. Eso, porque de la misma manera que la cinta dirigida por Steven Spielberg, la de Gareth Edwards regresa a los dinosaurios a su condición de criaturas salvajes…</p>
-                        <p style="font-size: 0.9em; color: #aaa;">Fuente: Hipertextual</p>
-                    </div>
-                    
-                </div>
-                
 
                 
-                <div class="summary-section">
-                    <h3>Resumen de Wikipedia</h3>
+                <div class="wikipedia-summary-section">
+                    <h4>Resumen de Wikipedia</h4>
                     <p>Resumen no disponible.</p>
                 </div>
                 
             </div>
             
-            <div class="company-section">
-                <div class="company-header">
-                    <h2>Bankwell Financial Group, Inc. (BWFG)</h2>
-                    <span class="semaphor green"></span>
+            <div class="company-section" id="bwfg">
+                <h3>BWFG (Error) (BWFG)</h3>
+                <div class="company-info">
+                    <p><strong>Sector:</strong> N/A</p>
+                    <p><strong>Industria:</strong> N/A</p>
+                    <p><strong>Precio Actual:</strong> N/A</p>
+                    <p><strong>Variación 6 Meses:</strong> N/A</p>
+                    <p><strong>Variación 1 Año:</strong> N/A</p>
+                    <p><strong>Variación 5 Años:</strong> N/A</p>
+                    <p><strong>Operating Income:</strong> N/A</p>
+                    <p><strong>Net Income:</strong> N/A</p>
+                    <p><strong>EBITDA:</strong> N/A</p>
                 </div>
 
-                <div class="metrics">
-                    <p><strong>Precio Actual:</strong> $37.22</p>
-                    <p><strong>P/E Ratio:</strong> 22.98</p>
-                    <p><strong>Capitalización Bursátil:</strong> 293,047,584 USD</p>
-                    <p><strong>Rendimiento por Dividendo:</strong> 213.00%</p>
-                </div>
-
-                <div class="charts">
-                    
-                    
-                    
+                <div class="charts-grid">
                     <div class="chart-item">
-                        <img src="img/BWFG_6m.png" alt="Gráfico 6 Meses"> 
+                        <img src="img/BWFG_6m.png" alt="Gráfico de BWFG 6 Meses">
                     </div>
-                    
-                    
                     <div class="chart-item">
-                        <img src="img/BWFG_1y.png" alt="Gráfico 1 Año"> 
+                        <img src="img/BWFG_1y.png" alt="Gráfico de BWFG 1 Año">
                     </div>
-                    
-                    
                     <div class="chart-item">
-                        <img src="img/BWFG_5y.png" alt="Gráfico 5 Años"> 
+                        <img src="img/BWFG_5y.png" alt="Gráfico de BWFG 5 Años">
                     </div>
-                    
-                    
                     <div class="chart-item">
-                        <img src="img/BWFG_financial.png" alt="Gráfico Financiero"> 
+                        <img src="img/BWFG_financial.png" alt="Gráfico Financiero de BWFG">
                     </div>
-                    
                 </div>
 
                 
 
                 
-                <div class="summary-section">
-                    <h3>Resumen de Wikipedia</h3>
+                <div class="wikipedia-summary-section">
+                    <h4>Resumen de Wikipedia</h4>
+                    <p>No se pudieron obtener datos para esta empresa debido a un error.</p>
+                </div>
+                
+            </div>
+            
+            <div class="company-section" id="cae">
+                <h3>CAE Inc. (CAE)</h3>
+                <div class="company-info">
+                    <p><strong>Sector:</strong> Industrials</p>
+                    <p><strong>Industria:</strong> Aerospace & Defense</p>
+                    <p><strong>Precio Actual:</strong> $28.41</p>
+                    <p><strong>Variación 6 Meses:</strong> 16.63%</p>
+                    <p><strong>Variación 1 Año:</strong> 53.32%</p>
+                    <p><strong>Variación 5 Años:</strong> N/A</p>
+                    <p><strong>Operating Income:</strong> $611.50M</p>
+                    <p><strong>Net Income:</strong> $405.30M</p>
+                    <p><strong>EBITDA:</strong> N/A</p>
+                </div>
+
+                <div class="charts-grid">
+                    <div class="chart-item">
+                        <img src="img/CAE_6m.png" alt="Gráfico de CAE 6 Meses">
+                    </div>
+                    <div class="chart-item">
+                        <img src="img/CAE_1y.png" alt="Gráfico de CAE 1 Año">
+                    </div>
+                    <div class="chart-item">
+                        <img src="img/CAE_5y.png" alt="Gráfico de CAE 5 Años">
+                    </div>
+                    <div class="chart-item">
+                        <img src="img/CAE_financial.png" alt="Gráfico Financiero de CAE">
+                    </div>
+                </div>
+
+                
+
+                
+                <div class="wikipedia-summary-section">
+                    <h4>Resumen de Wikipedia</h4>
                     <p>Resumen no disponible.</p>
                 </div>
                 
             </div>
             
-            <div class="company-section">
-                <div class="company-header">
-                    <h2>CAE Inc. (CAE)</h2>
-                    <span class="semaphor yellow"></span>
+            <div class="company-section" id="ame">
+                <h3>AMETEK, Inc. (AME)</h3>
+                <div class="company-info">
+                    <p><strong>Sector:</strong> Industrials</p>
+                    <p><strong>Industria:</strong> Specialty Industrial Machinery</p>
+                    <p><strong>Precio Actual:</strong> $179.95</p>
+                    <p><strong>Variación 6 Meses:</strong> -5.17%</p>
+                    <p><strong>Variación 1 Año:</strong> 5.40%</p>
+                    <p><strong>Variación 5 Años:</strong> N/A</p>
+                    <p><strong>Operating Income:</strong> $1.78B</p>
+                    <p><strong>Net Income:</strong> $1.38B</p>
+                    <p><strong>EBITDA:</strong> N/A</p>
                 </div>
 
-                <div class="metrics">
-                    <p><strong>Precio Actual:</strong> $28.43</p>
-                    <p><strong>P/E Ratio:</strong> 30.58</p>
-                    <p><strong>Capitalización Bursátil:</strong> 9,115,123,712 USD</p>
-                    <p><strong>Rendimiento por Dividendo:</strong> N/A</p>
-                </div>
-
-                <div class="charts">
-                    
-                    
-                    
+                <div class="charts-grid">
                     <div class="chart-item">
-                        <img src="img/CAE_6m.png" alt="Gráfico 6 Meses"> 
+                        <img src="img/AME_6m.png" alt="Gráfico de AME 6 Meses">
                     </div>
-                    
-                    
                     <div class="chart-item">
-                        <img src="img/CAE_1y.png" alt="Gráfico 1 Año"> 
+                        <img src="img/AME_1y.png" alt="Gráfico de AME 1 Año">
                     </div>
-                    
-                    
                     <div class="chart-item">
-                        <img src="img/CAE_5y.png" alt="Gráfico 5 Años"> 
+                        <img src="img/AME_5y.png" alt="Gráfico de AME 5 Años">
                     </div>
-                    
-                    
                     <div class="chart-item">
-                        <img src="img/CAE_financial.png" alt="Gráfico Financiero"> 
+                        <img src="img/AME_financial.png" alt="Gráfico Financiero de AME">
                     </div>
-                    
                 </div>
 
                 
-                <div class="news-section">
-                    <h3>Últimas Noticias</h3>
-                    
-                    <div class="news-item">
-                        <h4><a href="https://ramenparados.com/?p=454195" target="_blank">Elden Ring Nightreign</a></h4>
-                        <p>Análisis de Elden Ring Nightreign. El nuevo título de From Software ambientado en el mundo de Elden Ring y que apuesta por el multijugador.</p>
-                        <p style="font-size: 0.9em; color: #aaa;">Fuente: Ramenparados.com</p>
-                    </div>
-                    
-                </div>
-                
 
                 
-                <div class="summary-section">
-                    <h3>Resumen de Wikipedia</h3>
+                <div class="wikipedia-summary-section">
+                    <h4>Resumen de Wikipedia</h4>
                     <p>Resumen no disponible.</p>
                 </div>
                 
             </div>
             
-            <div class="company-section">
-                <div class="company-header">
-                    <h2>AMETEK, Inc. (AME)</h2>
-                    <span class="semaphor green"></span>
+            <div class="company-section" id="wfc">
+                <h3>WFC (Error) (WFC)</h3>
+                <div class="company-info">
+                    <p><strong>Sector:</strong> N/A</p>
+                    <p><strong>Industria:</strong> N/A</p>
+                    <p><strong>Precio Actual:</strong> N/A</p>
+                    <p><strong>Variación 6 Meses:</strong> N/A</p>
+                    <p><strong>Variación 1 Año:</strong> N/A</p>
+                    <p><strong>Variación 5 Años:</strong> N/A</p>
+                    <p><strong>Operating Income:</strong> N/A</p>
+                    <p><strong>Net Income:</strong> N/A</p>
+                    <p><strong>EBITDA:</strong> N/A</p>
                 </div>
 
-                <div class="metrics">
-                    <p><strong>Precio Actual:</strong> $180.69</p>
-                    <p><strong>P/E Ratio:</strong> 29.57</p>
-                    <p><strong>Capitalización Bursátil:</strong> 41,716,371,456 USD</p>
-                    <p><strong>Rendimiento por Dividendo:</strong> 68.00%</p>
-                </div>
-
-                <div class="charts">
-                    
-                    
-                    
+                <div class="charts-grid">
                     <div class="chart-item">
-                        <img src="img/AME_6m.png" alt="Gráfico 6 Meses"> 
+                        <img src="img/WFC_6m.png" alt="Gráfico de WFC 6 Meses">
                     </div>
-                    
-                    
                     <div class="chart-item">
-                        <img src="img/AME_1y.png" alt="Gráfico 1 Año"> 
+                        <img src="img/WFC_1y.png" alt="Gráfico de WFC 1 Año">
                     </div>
-                    
-                    
                     <div class="chart-item">
-                        <img src="img/AME_5y.png" alt="Gráfico 5 Años"> 
+                        <img src="img/WFC_5y.png" alt="Gráfico de WFC 5 Años">
                     </div>
-                    
-                    
                     <div class="chart-item">
-                        <img src="img/AME_financial.png" alt="Gráfico Financiero"> 
+                        <img src="img/WFC_financial.png" alt="Gráfico Financiero de WFC">
                     </div>
-                    
                 </div>
 
                 
 
                 
-                <div class="summary-section">
-                    <h3>Resumen de Wikipedia</h3>
+                <div class="wikipedia-summary-section">
+                    <h4>Resumen de Wikipedia</h4>
+                    <p>No se pudieron obtener datos para esta empresa debido a un error.</p>
+                </div>
+                
+            </div>
+            
+            <div class="company-section" id="dpz">
+                <h3>Domino's Pizza, Inc. (DPZ)</h3>
+                <div class="company-info">
+                    <p><strong>Sector:</strong> Consumer Cyclical</p>
+                    <p><strong>Industria:</strong> Restaurants</p>
+                    <p><strong>Precio Actual:</strong> $479.20</p>
+                    <p><strong>Variación 6 Meses:</strong> 7.87%</p>
+                    <p><strong>Variación 1 Año:</strong> 15.00%</p>
+                    <p><strong>Variación 5 Años:</strong> N/A</p>
+                    <p><strong>Operating Income:</strong> $879.16M</p>
+                    <p><strong>Net Income:</strong> $584.17M</p>
+                    <p><strong>EBITDA:</strong> N/A</p>
+                </div>
+
+                <div class="charts-grid">
+                    <div class="chart-item">
+                        <img src="img/DPZ_6m.png" alt="Gráfico de DPZ 6 Meses">
+                    </div>
+                    <div class="chart-item">
+                        <img src="img/DPZ_1y.png" alt="Gráfico de DPZ 1 Año">
+                    </div>
+                    <div class="chart-item">
+                        <img src="img/DPZ_5y.png" alt="Gráfico de DPZ 5 Años">
+                    </div>
+                    <div class="chart-item">
+                        <img src="img/DPZ_financial.png" alt="Gráfico Financiero de DPZ">
+                    </div>
+                </div>
+
+                
+
+                
+                <div class="wikipedia-summary-section">
+                    <h4>Resumen de Wikipedia</h4>
                     <p>Resumen no disponible.</p>
                 </div>
                 
             </div>
             
-            <div class="company-section">
-                <div class="company-header">
-                    <h2>Wells Fargo &amp; Company (WFC)</h2>
-                    <span class="semaphor green"></span>
+            <div class="company-section" id="pvbc">
+                <h3>PVBC (Error) (PVBC)</h3>
+                <div class="company-info">
+                    <p><strong>Sector:</strong> N/A</p>
+                    <p><strong>Industria:</strong> N/A</p>
+                    <p><strong>Precio Actual:</strong> N/A</p>
+                    <p><strong>Variación 6 Meses:</strong> N/A</p>
+                    <p><strong>Variación 1 Año:</strong> N/A</p>
+                    <p><strong>Variación 5 Años:</strong> N/A</p>
+                    <p><strong>Operating Income:</strong> N/A</p>
+                    <p><strong>Net Income:</strong> N/A</p>
+                    <p><strong>EBITDA:</strong> N/A</p>
                 </div>
 
-                <div class="metrics">
-                    <p><strong>Precio Actual:</strong> $84.47</p>
-                    <p><strong>P/E Ratio:</strong> 14.51</p>
-                    <p><strong>Capitalización Bursátil:</strong> 272,040,738,816 USD</p>
-                    <p><strong>Rendimiento por Dividendo:</strong> 191.00%</p>
-                </div>
-
-                <div class="charts">
-                    
-                    
-                    
+                <div class="charts-grid">
                     <div class="chart-item">
-                        <img src="img/WFC_6m.png" alt="Gráfico 6 Meses"> 
+                        <img src="img/PVBC_6m.png" alt="Gráfico de PVBC 6 Meses">
                     </div>
-                    
-                    
                     <div class="chart-item">
-                        <img src="img/WFC_1y.png" alt="Gráfico 1 Año"> 
+                        <img src="img/PVBC_1y.png" alt="Gráfico de PVBC 1 Año">
                     </div>
-                    
-                    
                     <div class="chart-item">
-                        <img src="img/WFC_5y.png" alt="Gráfico 5 Años"> 
+                        <img src="img/PVBC_5y.png" alt="Gráfico de PVBC 5 Años">
                     </div>
-                    
-                    
                     <div class="chart-item">
-                        <img src="img/WFC_financial.png" alt="Gráfico Financiero"> 
+                        <img src="img/PVBC_financial.png" alt="Gráfico Financiero de PVBC">
                     </div>
-                    
                 </div>
 
                 
 
                 
-                <div class="summary-section">
-                    <h3>Resumen de Wikipedia</h3>
-                    <p>Resumen no disponible.</p>
+                <div class="wikipedia-summary-section">
+                    <h4>Resumen de Wikipedia</h4>
+                    <p>No se pudieron obtener datos para esta empresa debido a un error.</p>
                 </div>
                 
             </div>
             
-            <div class="company-section">
-                <div class="company-header">
-                    <h2>Domino&#39;s Pizza, Inc. (DPZ)</h2>
-                    <span class="semaphor green"></span>
+            <div class="company-section" id="san">
+                <h3>SAN (Error) (SAN)</h3>
+                <div class="company-info">
+                    <p><strong>Sector:</strong> N/A</p>
+                    <p><strong>Industria:</strong> N/A</p>
+                    <p><strong>Precio Actual:</strong> N/A</p>
+                    <p><strong>Variación 6 Meses:</strong> N/A</p>
+                    <p><strong>Variación 1 Año:</strong> N/A</p>
+                    <p><strong>Variación 5 Años:</strong> N/A</p>
+                    <p><strong>Operating Income:</strong> N/A</p>
+                    <p><strong>Net Income:</strong> N/A</p>
+                    <p><strong>EBITDA:</strong> N/A</p>
                 </div>
 
-                <div class="metrics">
-                    <p><strong>Precio Actual:</strong> $478.62</p>
-                    <p><strong>P/E Ratio:</strong> 27.81</p>
-                    <p><strong>Capitalización Bursátil:</strong> 16,248,622,080 USD</p>
-                    <p><strong>Rendimiento por Dividendo:</strong> 146.00%</p>
-                </div>
-
-                <div class="charts">
-                    
-                    
-                    
+                <div class="charts-grid">
                     <div class="chart-item">
-                        <img src="img/DPZ_6m.png" alt="Gráfico 6 Meses"> 
+                        <img src="img/SAN_6m.png" alt="Gráfico de SAN 6 Meses">
                     </div>
-                    
-                    
                     <div class="chart-item">
-                        <img src="img/DPZ_1y.png" alt="Gráfico 1 Año"> 
+                        <img src="img/SAN_1y.png" alt="Gráfico de SAN 1 Año">
                     </div>
-                    
-                    
                     <div class="chart-item">
-                        <img src="img/DPZ_5y.png" alt="Gráfico 5 Años"> 
+                        <img src="img/SAN_5y.png" alt="Gráfico de SAN 5 Años">
                     </div>
-                    
-                    
                     <div class="chart-item">
-                        <img src="img/DPZ_financial.png" alt="Gráfico Financiero"> 
+                        <img src="img/SAN_financial.png" alt="Gráfico Financiero de SAN">
                     </div>
-                    
                 </div>
 
                 
 
                 
-                <div class="summary-section">
-                    <h3>Resumen de Wikipedia</h3>
-                    <p>Resumen no disponible.</p>
+                <div class="wikipedia-summary-section">
+                    <h4>Resumen de Wikipedia</h4>
+                    <p>No se pudieron obtener datos para esta empresa debido a un error.</p>
                 </div>
                 
             </div>
             
-            <div class="company-section">
-                <div class="company-header">
-                    <h2>Provident Bancorp, Inc. (PVBC)</h2>
-                    <span class="semaphor red"></span>
+            <div class="company-section" id="aapl">
+                <h3>Apple Inc. (AAPL)</h3>
+                <div class="company-info">
+                    <p><strong>Sector:</strong> Technology</p>
+                    <p><strong>Industria:</strong> Consumer Electronics</p>
+                    <p><strong>Precio Actual:</strong> $215.09</p>
+                    <p><strong>Variación 6 Meses:</strong> -3.60%</p>
+                    <p><strong>Variación 1 Año:</strong> -3.96%</p>
+                    <p><strong>Variación 5 Años:</strong> N/A</p>
+                    <p><strong>Operating Income:</strong> $123.22B</p>
+                    <p><strong>Net Income:</strong> $93.74B</p>
+                    <p><strong>EBITDA:</strong> N/A</p>
                 </div>
 
-                <div class="metrics">
-                    <p><strong>Precio Actual:</strong> $12.94</p>
-                    <p><strong>P/E Ratio:</strong> 49.77</p>
-                    <p><strong>Capitalización Bursátil:</strong> 230,176,720 USD</p>
-                    <p><strong>Rendimiento por Dividendo:</strong> N/A</p>
-                </div>
-
-                <div class="charts">
-                    
-                    
-                    
+                <div class="charts-grid">
                     <div class="chart-item">
-                        <img src="img/PVBC_6m.png" alt="Gráfico 6 Meses"> 
+                        <img src="img/AAPL_6m.png" alt="Gráfico de AAPL 6 Meses">
                     </div>
-                    
-                    
                     <div class="chart-item">
-                        <img src="img/PVBC_1y.png" alt="Gráfico 1 Año"> 
+                        <img src="img/AAPL_1y.png" alt="Gráfico de AAPL 1 Año">
                     </div>
-                    
-                    
                     <div class="chart-item">
-                        <img src="img/PVBC_5y.png" alt="Gráfico 5 Años"> 
+                        <img src="img/AAPL_5y.png" alt="Gráfico de AAPL 5 Años">
                     </div>
-                    
-                    
                     <div class="chart-item">
-                        <img src="img/PVBC_financial.png" alt="Gráfico Financiero"> 
+                        <img src="img/AAPL_financial.png" alt="Gráfico Financiero de AAPL">
                     </div>
-                    
                 </div>
 
                 
 
                 
-                <div class="summary-section">
-                    <h3>Resumen de Wikipedia</h3>
-                    <p>Resumen no disponible.</p>
-                </div>
-                
-            </div>
-            
-            <div class="company-section">
-                <div class="company-header">
-                    <h2>Banco Santander, S.A. (SAN)</h2>
-                    <span class="semaphor green"></span>
-                </div>
-
-                <div class="metrics">
-                    <p><strong>Precio Actual:</strong> $8.92</p>
-                    <p><strong>P/E Ratio:</strong> 9.49</p>
-                    <p><strong>Capitalización Bursátil:</strong> 132,606,500,864 USD</p>
-                    <p><strong>Rendimiento por Dividendo:</strong> 279.00%</p>
-                </div>
-
-                <div class="charts">
-                    
-                    
-                    
-                    <div class="chart-item">
-                        <img src="img/SAN_6m.png" alt="Gráfico 6 Meses"> 
-                    </div>
-                    
-                    
-                    <div class="chart-item">
-                        <img src="img/SAN_1y.png" alt="Gráfico 1 Año"> 
-                    </div>
-                    
-                    
-                    <div class="chart-item">
-                        <img src="img/SAN_5y.png" alt="Gráfico 5 Años"> 
-                    </div>
-                    
-                    
-                    <div class="chart-item">
-                        <img src="img/SAN_financial.png" alt="Gráfico Financiero"> 
-                    </div>
-                    
-                </div>
-
-                
-                <div class="news-section">
-                    <h3>Últimas Noticias</h3>
-                    
-                    <div class="news-item">
-                        <h4><a href="https://www.elmundo.es/papel/historias/2025/07/21/687be01ae85ecea3088b4577.html" target="_blank">Vida y jubilación de los &#39;yuppies&#39; españoles: &#34;Lo de &#39;Wall Street&#39; se lo creyeron cuatro gilipollas, pero Mario Conde sí tuvo un impacto cultural&#34;</a></h4>
-                        <p>Los españoles que llegaron a la universidad con la democracia y a la banca en los años del bum económico 1985-1990 terminan sus carreras. Hablamos con testigos directos de un tiempo mil veces retratado como el de la codicia y la deshumanización Leer</p>
-                        <p style="font-size: 0.9em; color: #aaa;">Fuente: El Mundo</p>
-                    </div>
-                    
-                    <div class="news-item">
-                        <h4><a href="https://www.latercera.com/pulso/noticia/historico-ejecutivo-de-santander-espana-deja-su-cargo-de-director-en-la-filial-de-chile/" target="_blank">Histórico ejecutivo de Santander España deja su cargo de director en la filial de Chile</a></h4>
-                        <p>Rodrigo Echenique asumió como director de Santander Chile a finales de marzo de 2019.</p>
-                        <p style="font-size: 0.9em; color: #aaa;">Fuente: Latercera.com</p>
-                    </div>
-                    
-                    <div class="news-item">
-                        <h4><a href="https://www.latercera.com/pulso/noticia/desde-el-conflicto-entre-los-hermanos-schupper-a-la-fallida-venta-a-empresario-chino-las-causas-del-cierre-de-corona/" target="_blank">Desde el conflicto entre los hermanos Schupper a la fallida venta a empresario chino, las causas del cierre de Corona</a></h4>
-                        <p>Sin reuniones de última hora con la banca y con sus accionistas prácticamente resignados, Corona enfrenta el inminente fracaso de su plan de reorganización. A contrarreloj, los hermanos Schupper deben conseguir fondos para evitar la quiebra definitiva de la m…</p>
-                        <p style="font-size: 0.9em; color: #aaa;">Fuente: Latercera.com</p>
-                    </div>
-                    
-                    <div class="news-item">
-                        <h4><a href="https://www.eleconomista.es/banca-finanzas/noticias/13451285/07/25/pib-group-compra-otras-cuatro-corredurias-de-seguros-y-pesca-en-sabadell.html" target="_blank">PIB Group compra otras cuatro corredurías de seguros y &#39;pesca&#39; en Sabadell</a></h4>
-                        <p>El bróker de seguro PIB Group, quinto más grande en el mercado español, continúa su expansión en España con la incorporación de cuatro nuevas corredurías a su estructura: Schippers (Tenerife), Manuel Torres Cortegoso Correduría de Seguros (Vigo), Alba-Vera (S…</p>
-                        <p style="font-size: 0.9em; color: #aaa;">Fuente: Eleconomista.es</p>
-                    </div>
-                    
-                    <div class="news-item">
-                        <h4><a href="https://www.eleconomista.es/mercados-cotizaciones/noticias/13456812/07/25/cox-acelera-su-plan-de-inversion-con-98-millones-de-una-colocacion-privada-de-allianz-america.html" target="_blank">Cox acelera su plan de inversión con 98 millones de una colocación privada de Allianz America</a></h4>
-                        <p>Cox anuncia que ha completado con éxito una Colocación Privada por 98 millones de euros, 115 millones de dólares, con Allianz Capital Partners of America. &#34;Esta transacción demuestra la confianza del Mercado Financiero en el modelo de negocio de la compañía y…</p>
-                        <p style="font-size: 0.9em; color: #aaa;">Fuente: Eleconomista.es</p>
-                    </div>
-                    
-                </div>
-                
-
-                
-                <div class="summary-section">
-                    <h3>Resumen de Wikipedia</h3>
-                    <p>Resumen no disponible.</p>
+                <div class="wikipedia-summary-section">
+                    <h4>Resumen de Wikipedia</h4>
+                    <p>Apple, Inc. es una empresa tecnológica multinacional con sede en Cupertino, California, Estados Unidos. Es la empresa de tecnologías de la información y la comunicación más grande del mundo por ingresos, con US$394 300 000 000 en ingresos en 2022. En marzo de 2023, Apple es la empresa más grande del mundo por capitalización de mercado. En junio de 2022, Apple es el cuarto mayor proveedor de computadoras personales por ventas de unidades; la mayor empresa manufacturera por ingresos; y primer fabricante de teléfonos móviles del mundo en 2023. Se considera una de las cinco grandes empresas estadounidenses de tecnología de la información, junto con Alphabet, Amazon, Meta Platforms y Microsoft.</p>
                 </div>
                 
             </div>
             
         
     </div>
+
+    <footer>
+        <p>Datos obtenidos de Yahoo Finance y Wikipedia. Generado por tu script Python.</p>
+    </footer>
 </body>
 </html>

@@ -1,322 +1,450 @@
-import os
 import yfinance as yf
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import io
-import base64
-from newsapi import NewsApiClient
-from flask import Flask, render_template, request, jsonify
-from datetime import datetime, timedelta # Asegúrate de que datetime está importado
+from jinja2 import Environment, FileSystemLoader
+import os
 import requests
-from bs4 import BeautifulSoup
+import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
+from matplotlib.ticker import FuncFormatter
 
-# Configuración de la aplicación Flask
-app = Flask(__name__)
+# Asegúrate de que esta carpeta exista
+if not os.path.exists('public/img'):
+    os.makedirs('public/img')
 
-# --- Configuración de API Keys ---
-# Asegúrate de que NEWS_API_KEY esté configurada en los Secrets de Replit
-NEWS_API_KEY = os.environ.get('NEWS_API_KEY')
-if not NEWS_API_KEY:
-    print("Advertencia: NEWS_API_KEY no configurada. La funcionalidad de noticias no estará disponible.")
-newsapi = NewsApiClient(api_key=NEWS_API_KEY) if NEWS_API_KEY else None
+# Asegúrate de que esta carpeta exista
+if not os.path.exists('public/css'):
+    os.makedirs('public/css')
 
-# Lista de tickers para el dashboard (puedes cargarla desde tickers.txt)
-def load_tickers(filename="tickers.txt"):
-    try:
-        with open(filename, "r") as f:
-            tickers = [line.strip() for line in f if line.strip()]
-        return tickers
-    except FileNotFoundError:
-        print(f"Error: El archivo {filename} no fue encontrado.")
-        return []
+# Configurar el entorno Jinja2
+env = Environment(loader=FileSystemLoader('templates'))
 
-TICKERS = load_tickers()
-
-# --- Funciones de Utilidad para Gráficos ---
-
-def get_stock_data(ticker_symbol, period="6mo"):
-    try:
-        ticker = yf.Ticker(ticker_symbol)
-        history = ticker.history(period=period)
-        if history.empty:
-            return None
-        # Asegurarse de que el índice sea DatetimeIndex
-        history.index = pd.to_datetime(history.index)
-        return history
-    except Exception as e:
-        print(f"Error al obtener datos de {ticker_symbol} para {period}: {e}")
-        return None
-
-def get_financial_data(ticker_symbol):
-    try:
-        ticker = yf.Ticker(ticker_symbol)
-        financials = ticker.financials
-        if financials.empty:
-            return None, None
-
-        # Intentar obtener 'Operating Income' y 'Total Revenue'
-        operating_income_row = financials.loc['Operating Income'] if 'Operating Income' in financials.index else None
-        total_revenue_row = financials.loc['Total Revenue'] if 'Total Revenue' in financials.index else None
-
-        # Convertir a DataFrame y transponer para tener años como índice
-        op_income_df = pd.DataFrame(operating_income_row).T if operating_income_row is not None else pd.DataFrame()
-        revenue_df = pd.DataFrame(total_revenue_row).T if total_revenue_row is not None else pd.DataFrame()
-
-        # Asegurarse de que el índice sea DatetimeIndex
-        if not op_income_df.empty:
-            # Reorganizar el DataFrame para que el índice sea la fecha y la columna sea el valor
-            op_income_df = op_income_df.T
-            op_income_df.index = pd.to_datetime(op_income_df.index)
-            # Asegurarse de que la columna se llame 'Operating Income'
-            if 'Operating Income' not in op_income_df.columns:
-                 # Si no está, asumimos que es la única columna y la renombramos
-                op_income_df.columns = ['Operating Income']
-        if not revenue_df.empty:
-            # Reorganizar el DataFrame para que el índice sea la fecha y la columna sea el valor
-            revenue_df = revenue_df.T
-            revenue_df.index = pd.to_datetime(revenue_df.index)
-            # Asegurarse de que la columna se llame 'Total Revenue'
-            if 'Total Revenue' not in revenue_df.columns:
-                 # Si no está, asumimos que es la única columna y la renombramos
-                revenue_df.columns = ['Total Revenue']
-
-        return op_income_df, revenue_df
-
-    except Exception as e:
-        print(f"Error al obtener datos financieros de {ticker_symbol}: {e}")
-        return None, None
-
-def calculate_semaphor_color(metrics):
-    # Aquí puedes definir tus reglas para el semáforo
-    # Esto es solo un ejemplo simplificado
-    price = metrics.get('currentPrice')
-    market_cap = metrics.get('marketCap')
-    pe_ratio = metrics.get('trailingPE')
-    dividend_yield = metrics.get('dividendYield')
-
-    score = 0
-    if price and price > 0: score += 1
-    if market_cap and market_cap > 1e9: score += 1 # Ejemplo: capitalización > 1 billón USD
-    if pe_ratio and pe_ratio is not None and 0 < pe_ratio < 25: score += 1 # Ejemplo: PE razonable
-    if dividend_yield is not None and dividend_yield > 0.01: score += 1 # Ejemplo: dividendos > 1%
-
-    if score >= 3:
-        return "green"
-    elif score >= 2:
-        return "yellow"
-    else:
-        return "red"
-
-def generate_chart_image(history_data, title, y_label, file_path):
-    if history_data is None or history_data.empty:
-        print(f"No hay datos para generar el gráfico: {title}")
-        return None
-
-    plt.style.use('dark_background') # Estilo oscuro para el gráfico
-    fig, ax1 = plt.subplots(figsize=(10, 6))
-
-    color = 'tab:blue'
-    ax1.set_xlabel('Fecha')
-    ax1.set_ylabel(y_label, color=color)
-    ax1.plot(history_data.index, history_data['Close'], color=color)
-    ax1.tick_params(axis='y', labelcolor=color)
-
-    # Formato de fecha en el eje X (mejorado para Matplotlib)
-    plt.xticks(rotation=45, ha='right') # Rotar etiquetas y alinear a la derecha
-
-    # Formato de moneda para el eje Y
-    formatter = mticker.FormatStrFormatter('$%.2f')
-    ax1.yaxis.set_major_formatter(formatter)
-
-    plt.title(title)
-    fig.tight_layout()
-
-    # Guardar el gráfico como archivo PNG
-    plt.savefig(file_path, format='png', bbox_inches='tight', transparent=True)
-    plt.close(fig) # Cierra la figura para liberar memoria
-    return file_path
-
-def generate_financial_chart(op_income_df, revenue_df, ticker_symbol, file_path):
-    plt.style.use('dark_background') # Estilo oscuro
-    fig, ax = plt.subplots(figsize=(10, 6))
-
-    # Asegurarse de que los DataFrames no estén vacíos antes de intentar acceder a ellos
-    if not revenue_df.empty and 'Total Revenue' in revenue_df.columns:
-        # Usar el índice (fechas) y la columna 'Total Revenue'
-        ax.plot(revenue_df.index, revenue_df['Total Revenue'], label='Total Revenue', color='tab:green', marker='o')
-    else:
-        print(f"Advertencia: 'Total Revenue' no encontrado o vacío para {ticker_symbol}")
-
-    if not op_income_df.empty and 'Operating Income' in op_income_df.columns:
-        # Usar el índice (fechas) y la columna 'Operating Income'
-        ax.plot(op_income_df.index, op_income_df['Operating Income'], label='Operating Income', color='tab:red', marker='x')
-    else:
-        print(f"Advertencia: 'Operating Income' no encontrado o vacío para {ticker_symbol}")
-
-    ax.set_xlabel('Año')
-    ax.set_ylabel('Millones de USD')
-    ax.set_title(f'Ingresos y Ganancias Operativas de {ticker_symbol}')
-    ax.legend()
-    plt.xticks(rotation=45, ha='right') # Rotar etiquetas y alinear a la derecha
-    fig.tight_layout()
-
-    # Guardar el gráfico como archivo PNG
-    plt.savefig(file_path, format='png', bbox_inches='tight', transparent=True)
-    plt.close(fig) # Cierra la figura para liberar memoria
-    return file_path
-
-def get_company_news(company_name):
-    articles = []
-    if newsapi:
-        try:
-            # Buscar noticias por el nombre de la empresa
-            response = newsapi.get_everything(
-                q=company_name,
-                language='es', # O inglés si prefieres noticias en inglés
-                sort_by='relevancy',
-                page_size=5 # Número de noticias
-            )
-            if response['status'] == 'ok':
-                articles = response['articles']
-            else:
-                print(f"Error al obtener noticias: {response.get('message', 'Mensaje desconocido')}")
-        except Exception as e:
-            print(f"Error en la llamada a NewsAPI: {e}")
-    return articles
-
+# --- Función para obtener resumen de Wikipedia ---
 def get_wikipedia_summary(company_name):
     try:
-        # Usa el endpoint de Wikipedia API para obtener el resumen
-        # Intentamos buscar con el nombre de la empresa tal cual, pero la API es sensible.
-        # Para evitar el 404, si el nombre es muy largo o tiene caracteres especiales, podríamos
-        # intentar buscar solo la primera parte o simplificar.
-        safe_company_name = company_name.replace(' ', '_').replace('&', '%26').replace('.', '') # Eliminar '.' y codificar '&'
-        response = requests.get(
-            f"https://es.wikipedia.org/api/rest_v1/page/summary/{safe_company_name}"
-        )
-        response.raise_for_status()  # Lanza una excepción para errores HTTP (como 404)
+        # Intenta primero con la API de Wikipedia en español
+        url = f"https://es.wikipedia.org/api/rest_v1/page/summary/{company_name.replace(' ', '_')}"
+        response = requests.get(url, timeout=5)
+        response.raise_for_status()
         data = response.json()
-        return data.get('extract', 'Resumen no disponible.')
+        if 'extract' in data:
+            return data['extract']
+
+        # Si no se encuentra en español, intenta con la API en inglés
+        url_en = f"https://en.wikipedia.org/api/rest_v1/page/summary/{company_name.replace(' ', '_')}"
+        response_en = requests.get(url_en, timeout=5)
+        response_en.raise_for_status()
+        data_en = response_en.json()
+        if 'extract' in data_en:
+            return data_en['extract']
+
+        return "Resumen no disponible."
     except requests.exceptions.RequestException as e:
         print(f"Error al obtener resumen de Wikipedia para {company_name}: {e}")
         return "Resumen no disponible."
 
+# --- Función para formatear valores financieros ---
+def format_financial_value(value):
+    if value is None or pd.isna(value):
+        return "N/A"
+    if abs(value) >= 1_000_000_000:
+        return f"${value / 1_000_000_000:,.2f}B"
+    elif abs(value) >= 1_000_000:
+        return f"${value / 1_000_000:,.2f}M"
+    elif abs(value) >= 1_000:
+        return f"${value / 1_000:,.2f}K"
+    else:
+        return f"${value:,.2f}"
+
+# --- Función para generar gráficos ---
+def generate_chart(data, title, filename, y_label='Precio de Cierre', period='1y'):
+    if data is None or data.empty:
+        print(f"No hay datos para generar el gráfico: {title}")
+        return False
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(data.index, data['Close'], color='#4CAF50') # Color verde para la línea
+    plt.title(title, color='#333333', fontsize=16) # Título en gris oscuro
+    plt.xlabel('Fecha', color='#555555') # Etiquetas en gris medio
+    plt.ylabel(y_label, color='#555555')
+    plt.grid(True, linestyle='--', alpha=0.7) # Cuadrícula sutil
+
+    plt.gca().set_facecolor('#F9F9F9') # Fondo del área del gráfico en gris claro
+    plt.gcf().set_facecolor('#FFFFFF') # Fondo de la figura en blanco
+
+    # Formatear el eje Y como moneda (ej. $100, $200)
+    formatter = FuncFormatter(lambda x, p: f'${x:,.0f}')
+    plt.gca().yaxis.set_major_formatter(formatter)
+
+    # Rotar las etiquetas del eje X si hay muchas
+    plt.xticks(rotation=45, ha='right', color='#555555') # Etiquetas en gris medio
+    plt.yticks(color='#555555') # Etiquetas en gris medio
+
+    plt.tight_layout()
+    plt.savefig(f'public/img/{filename}')
+    plt.close()
+    return True
 
 # --- Función principal para generar el sitio estático ---
-
 def generate_static_site():
     print("Iniciando la generación del sitio estático...")
 
-    # Asegurarse de que las carpetas de salida existan
-    output_dir = 'public'
-    img_dir = os.path.join(output_dir, 'img')
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-    if not os.path.exists(img_dir):
-        os.makedirs(img_dir)
+    with open('tickers.txt', 'r') as f:
+        tickers = [line.strip() for line in f if line.strip()]
 
-    companies_data = []
+    all_company_data = []
+    all_companies_summary = [] # Lista para los datos de la tabla resumen
 
-    for ticker_symbol in TICKERS:
-        print(f"Procesando {ticker_symbol}...")
+    for ticker in tickers:
+        print(f"Procesando {ticker}...")
         try:
-            ticker = yf.Ticker(ticker_symbol)
-            info = ticker.info
+            stock = yf.Ticker(ticker)
+            info = stock.info
+            hist = stock.history(period="5y")
 
-            # Datos para el resumen general
-            company_name = info.get('longName', ticker_symbol)
-            current_price = info.get('currentPrice', 'N/A')
-            pe_ratio = info.get('trailingPE', 'N/A')
-            market_cap = info.get('marketCap', 'N/A')
-            dividend_yield = info.get('dividendYield', 'N/A')
+            # --- Datos de la empresa ---
+            company_name = info.get('longName', ticker)
+            sector = info.get('sector', 'N/A')
+            industry = info.get('industry', 'N/A')
+            current_price = info.get('regularMarketPrice')
 
-            # Calcular el color del semáforo
-            semaphor_color = calculate_semaphor_color(info)
-
-            # Generar gráficos y obtener sus rutas de archivo
-            # Las URLs para el HTML deben ser relativas a la carpeta 'public'
-            chart_6m_url = f'img/{ticker_symbol}_6m.png'
-            chart_1y_url = f'img/{ticker_symbol}_1y.png'
-            chart_5y_url = f'img/{ticker_symbol}_5y.png'
-            financial_chart_url = f'img/{ticker_symbol}_financial.png'
-
-            # Las rutas para guardar los archivos en el sistema de archivos
-            chart_6m_path = os.path.join(img_dir, f'{ticker_symbol}_6m.png')
-            chart_1y_path = os.path.join(img_dir, f'{ticker_symbol}_1y.png')
-            chart_5y_path = os.path.join(img_dir, f'{ticker_symbol}_5y.png')
-            financial_chart_path = os.path.join(img_dir, f'{ticker_symbol}_financial.png')
-
-            history_6m = get_stock_data(ticker_symbol, "6mo")
-            generate_chart_image(history_6m, f'Precio de Cierre (6 Meses) - {ticker_symbol}', 'Precio (USD)', chart_6m_path)
-
-            history_1y = get_stock_data(ticker_symbol, "1y")
-            generate_chart_image(history_1y, f'Precio de Cierre (1 Año) - {ticker_symbol}', 'Precio (USD)', chart_1y_path)
-
-            history_5y = get_stock_data(ticker_symbol, "5y")
-            generate_chart_image(history_5y, f'Precio de Cierre (5 Años) - {ticker_symbol}', 'Precio (USD)', chart_5y_path)
-
-            op_income_df, revenue_df = get_financial_data(ticker_symbol)
-            generate_financial_chart(op_income_df, revenue_df, ticker_symbol, financial_chart_path)
-
-            # Obtener noticias y resumen de Wikipedia
-            news_articles = get_company_news(company_name)
+            # --- Resumen de Wikipedia ---
             wikipedia_summary = get_wikipedia_summary(company_name)
 
-            companies_data.append({
-                'ticker': ticker_symbol,
+            # --- Precios históricos para variación ---
+            price_6m_ago = hist['Close'].iloc[-126] if len(hist) >= 126 else None # Aprox 6 meses (126 días hábiles)
+            price_1y_ago = hist['Close'].iloc[-252] if len(hist) >= 252 else None # Aprox 1 año (252 días hábiles)
+            price_5y_ago = hist['Close'].iloc[0] if len(hist) >= 1260 else None # Aprox 5 años (1260 días hábiles)
+
+            # --- Variaciones porcentuales ---
+            change_6m = None
+            if current_price and price_6m_ago is not None and price_6m_ago != 0:
+                change_6m = ((current_price - price_6m_ago) / price_6m_ago) * 100
+
+            change_1y = None
+            if current_price and price_1y_ago is not None and price_1y_ago != 0:
+                change_1y = ((current_price - price_1y_ago) / price_1y_ago) * 100
+
+            change_5y = None
+            if current_price and price_5y_ago is not None and price_5y_ago != 0:
+                change_5y = ((current_price - price_5y_ago) / price_5y_ago) * 100
+
+            # --- Datos financieros (Balance Sheet / Income Statement) ---
+            # Asegúrate de que los datos financieros se obtengan correctamente
+            # Aquí un ejemplo de cómo obtenerlos si no los tienes
+            try:
+                financials = stock.financials
+                operating_income = financials.loc['Operating Income'][0] if 'Operating Income' in financials.index else None
+                net_income = financials.loc['Net Income'][0] if 'Net Income' in financials.index else None
+            except Exception as e:
+                print(f"Error al obtener datos financieros para {ticker}: {e}")
+                operating_income = None
+                net_income = None
+
+            try:
+                cash_flow = stock.cashflow
+                ebitda = cash_flow.loc['EBITDA'][0] if 'EBITDA' in cash_flow.index else None
+            except Exception as e:
+                print(f"Error al obtener datos de flujo de caja para {ticker}: {e}")
+                ebitda = None
+
+            # --- Generación de gráficos ---
+            # Ajustar los periodos para que los gráficos tengan sentido si no hay 5y de historia
+            hist_1y = stock.history(period="1y")
+            hist_6m = stock.history(period="6mo")
+            hist_5y = stock.history(period="5y") # Mantener para la variación, aunque el gráfico sea solo de 1y
+
+            generate_chart(hist_6m, f'Precio de Cierre (6 Meses) - {ticker}', f'{ticker}_6m.png', period='6mo')
+            generate_chart(hist_1y, f'Precio de Cierre (1 Año) - {ticker}', f'{ticker}_1y.png', period='1y')
+            generate_chart(hist_5y, f'Precio de Cierre (5 Años) - {ticker}', f'{ticker}_5y.png', period='5y')
+
+            # --- Datos para el gráfico financiero ---
+            # Obtener datos de ingresos y beneficio para el gráfico financiero
+            if not financials.empty:
+                # Usar transpose() para que las fechas sean el índice si no lo son
+                # Y seleccionar las últimas 4 columnas (años) para el gráfico
+                financial_data_for_plot = financials.loc[['Operating Income', 'Net Income']].transpose().iloc[:4]
+                if not financial_data_for_plot.empty:
+                    plt.figure(figsize=(10, 6))
+                    financial_data_for_plot.plot(kind='bar', ax=plt.gca(), color=['#66BB6A', '#FFA726']) # Colores amigables
+                    plt.title(f'Ingresos y Beneficios Netos - {ticker}', color='#333333', fontsize=16)
+                    plt.xlabel('Año', color='#555555')
+                    plt.ylabel('Valor ($)', color='#555555')
+
+                    # Formatear el eje Y como moneda en millones o billones
+                    formatter = FuncFormatter(lambda x, p: format_financial_value(x))
+                    plt.gca().yaxis.set_major_formatter(formatter)
+
+                    plt.xticks(rotation=45, ha='right', color='#555555')
+                    plt.yticks(color='#555555')
+                    plt.grid(axis='y', linestyle='--', alpha=0.7)
+                    plt.gca().set_facecolor('#F9F9F9')
+                    plt.gcf().set_facecolor('#FFFFFF')
+                    plt.tight_layout()
+                    plt.savefig(f'public/img/{ticker}_financial.png')
+                    plt.close()
+                else:
+                    print(f"No hay datos financieros suficientes para el gráfico: {ticker}")
+            else:
+                print(f"No hay datos financieros para generar el gráfico: {ticker}")
+
+            # --- Determinar el color del semáforo para la tabla ---
+            # Basado en la variación de 1 año. Ajusta los umbrales si lo deseas.
+            semaphore_color = "gray"  # Default
+            if change_1y is not None:
+                if change_1y >= 20:
+                    semaphore_color = "green"
+                elif change_1y >= 0:
+                    semaphore_color = "yellow"
+                else:
+                    semaphore_color = "red"
+
+            # --- Almacenar todos los datos de la empresa para la plantilla ---
+            all_company_data.append({
+                'ticker': ticker,
                 'name': company_name,
-                'current_price': current_price,
-                'pe_ratio': pe_ratio,
-                'market_cap': market_cap,
-                'dividend_yield': f"{dividend_yield*100:.2f}%" if isinstance(dividend_yield, (int, float)) else 'N/A',
-                'semaphor_color': semaphor_color,
-                'chart_6m_url': chart_6m_url, # Usa la URL relativa
-                'chart_1y_url': chart_1y_url,
-                'chart_5y_url': chart_5y_url,
-                'financial_chart_url': financial_chart_url,
-                'news_articles': news_articles,
-                'wikipedia_summary': wikipedia_summary
+                'sector': sector,
+                'industry': industry,
+                'current_price': f"${current_price:.2f}" if current_price else "N/A",
+                'change_6m': f"{change_6m:.2f}%" if change_6m is not None else "N/A",
+                'change_1y': f"{change_1y:.2f}%" if change_1y is not None else "N/A",
+                'change_5y': f"{change_5y:.2f}%" if change_5y is not None else "N/A",
+                'operating_income': format_financial_value(operating_income),
+                'net_income': format_financial_value(net_income),
+                'ebitda': format_financial_value(ebitda),
+                'wikipedia_summary': wikipedia_summary,
+            })
+
+            # --- Datos específicos para la tabla resumen ---
+            all_companies_summary.append({
+                'ticker': ticker,
+                'name': company_name,
+                'current_price': f"${current_price:.2f}" if current_price else "N/A",
+                'change_6m': f"{change_6m:.2f}%" if change_6m is not None else "N/A",
+                'change_1y': f"{change_1y:.2f}%" if change_1y is not None else "N/A",
+                'change_5y': f"{change_5y:.2f}%" if change_5y is not None else "N/A",
+                'semaphore_color': semaphore_color
             })
 
         except Exception as e:
-            print(f"Error procesando {ticker_symbol}: {e}")
-            companies_data.append({
-                'ticker': ticker_symbol,
-                'name': ticker_symbol,
-                'current_price': 'N/A',
-                'pe_ratio': 'N/A',
-                'market_cap': 'N/A',
-                'dividend_yield': 'N/A',
-                'semaphor_color': 'red', # Rojo si hay error
-                'chart_6m_url': '',
-                'chart_1y_url': '',
-                'chart_5y_url': '',
-                'financial_chart_url': '',
-                'news_articles': [],
-                'wikipedia_summary': 'Error al cargar datos.'
+            print(f"Error procesando {ticker}: {e}")
+            # Añadir datos básicos con "N/A" si hay un error para que la tabla no se rompa
+            all_company_data.append({
+                'ticker': ticker,
+                'name': f"{ticker} (Error)",
+                'sector': 'N/A', 'industry': 'N/A',
+                'current_price': 'N/A', 'change_6m': 'N/A',
+                'change_1y': 'N/A', 'change_5y': 'N/A',
+                'operating_income': 'N/A', 'net_income': 'N/A', 'ebitda': 'N/A',
+                'wikipedia_summary': 'No se pudieron obtener datos para esta empresa debido a un error.',
+            })
+            all_companies_summary.append({
+                'ticker': ticker,
+                'name': f"{ticker} (Error)",
+                'current_price': 'N/A', 'change_6m': 'N/A',
+                'change_1y': 'N/A', 'change_5y': 'N/A',
+                'semaphore_color': 'gray'
             })
 
-    # Renderizar la plantilla HTML con todos los datos
-    # Obtener la fecha y hora actual para el footer
-    current_generation_time = datetime.now().strftime("%d/%m/%Y %H:%M") # Formato deseado
 
-    rendered_html = render_template('index.html',
-                                    companies=companies_data,
-                                    generation_time=current_generation_time) # Pasa la variable a la plantilla
+    # --- Generar el archivo CSS principal ---
+    css_content = """
+    body {
+        font-family: 'Helvetica Neue', Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: #F8F8F8; /* Gris muy claro */
+        color: #333333; /* Gris oscuro para texto principal */
+        line-height: 1.6;
+    }
 
-    # Guardar el HTML renderizado en la carpeta 'public'
-    with open(os.path.join(output_dir, 'index.html'), 'w', encoding='utf-8') as f:
-        f.write(rendered_html)
+    .container {
+        max-width: 1200px;
+        margin: 20px auto;
+        padding: 20px;
+        background-color: #FFFFFF; /* Fondo blanco */
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05); /* Sombra sutil */
+    }
 
-    print(f"Sitio estático generado en la carpeta '{output_dir}/'")
+    h1, h2, h3 {
+        color: #222222; /* Gris casi negro para títulos */
+        text-align: center;
+        margin-bottom: 25px;
+        font-weight: 300; /* Fuente más ligera */
+    }
+
+    /* Estilos de la tabla resumen */
+    .summary-table {
+        width: 100%;
+        border-collapse: collapse; /* Eliminar bordes dobles */
+        margin-bottom: 40px;
+        font-size: 0.9em;
+        background-color: #FFFFFF;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .summary-table th, .summary-table td {
+        padding: 12px 15px;
+        text-align: left;
+        border-bottom: 1px solid #EEEEEE; /* Líneas divisorias suaves */
+    }
+
+    .summary-table th {
+        background-color: #F2F2F2; /* Gris claro para encabezados */
+        color: #555555; /* Gris medio para texto de encabezado */
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .summary-table tbody tr:hover {
+        background-color: #FDFDFD; /* Ligero resaltado al pasar el ratón */
+    }
+
+    .summary-table .change-positive {
+        color: #28a745; /* Verde para positivo */
+        font-weight: bold;
+    }
+
+    .summary-table .change-negative {
+        color: #dc3545; /* Rojo para negativo */
+        font-weight: bold;
+    }
+
+    .summary-table .change-neutral {
+        color: #6c757d; /* Gris para neutral o sin cambio */
+    }
+
+    /* Colores del semáforo */
+    .semaphore-red {
+        background-color: #ffe0e0; /* Rojo claro */
+        border-left: 5px solid #dc3545; /* Barra lateral roja */
+    }
+    .semaphore-yellow {
+        background-color: #fff9e0; /* Amarillo claro */
+        border-left: 5px solid #ffc107; /* Barra lateral amarilla */
+    }
+    .semaphore-green {
+        background-color: #e0ffe0; /* Verde claro */
+        border-left: 5px solid #28a745; /* Barra lateral verde */
+    }
+    .semaphore-gray {
+        background-color: #f0f0f0; /* Gris muy claro */
+        border-left: 5px solid #cccccc; /* Barra lateral gris */
+    }
+
+    /* Estilos para las secciones de empresas individuales */
+    .company-section {
+        background-color: #FFFFFF;
+        padding: 30px;
+        margin-bottom: 30px;
+        border-radius: 8px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        border-top: 5px solid #6c757d; /* Borde superior gris */
+    }
+
+    .company-section h3 {
+        text-align: left;
+        margin-top: 0;
+        margin-bottom: 15px;
+        color: #333333;
+    }
+
+    .company-info p {
+        margin: 5px 0;
+        color: #555555;
+    }
+
+    .company-info strong {
+        color: #222222;
+    }
+
+    .charts-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin-top: 25px;
+    }
+
+    .chart-item img {
+        max-width: 100%;
+        height: auto;
+        display: block;
+        border: 1px solid #EEEEEE;
+        border-radius: 4px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .news-section, .wikipedia-summary-section {
+        background-color: #FDFDFD;
+        padding: 20px;
+        margin-top: 20px;
+        border-radius: 6px;
+        border: 1px solid #EEEEEE;
+    }
+
+    .news-section h4, .wikipedia-summary-section h4 {
+        color: #444444;
+        margin-top: 0;
+        margin-bottom: 10px;
+    }
+
+    .news-item {
+        margin-bottom: 10px;
+        padding-bottom: 10px;
+        border-bottom: 1px dashed #E0E0E0;
+    }
+
+    .news-item:last-child {
+        border-bottom: none;
+    }
+
+    .news-item a {
+        color: #007BFF; /* Azul para enlaces */
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+    .news-item a:hover {
+        text-decoration: underline;
+    }
+
+    .news-item p {
+        font-size: 0.9em;
+        color: #666666;
+    }
+
+    .news-item span.source {
+        font-size: 0.8em;
+        color: #999999;
+    }
+
+    footer {
+        text-align: center;
+        margin-top: 50px;
+        padding-top: 20px;
+        border-top: 1px solid #EEEEEE;
+        color: #777777;
+        font-size: 0.9em;
+    }
+    """
+    with open('public/css/style.css', 'w') as f:
+        f.write(css_content)
+    print("Archivo CSS generado en public/css/style.css")
+
+
+    # --- Renderizar la plantilla HTML ---
+    template = env.get_template('index.html')
+    output = template.render(
+        companies=all_company_data,
+        all_companies_summary=all_companies_summary
+    )
+
+    with open('public/index.html', 'w') as f:
+        f.write(output)
+    print("Sitio estático generado en la carpeta 'public/'")
     print("Ahora puedes subir el contenido de la carpeta 'public' a Netlify o Vercel.")
 
-# --- Ejecución del generador estático ---
+# Ejecutar la función principal
 if __name__ == '__main__':
-    # Crear un contexto de aplicación manualmente para render_template
-    with app.app_context():
-        generate_static_site()
-
-    # No necesitamos app.run() aquí si solo vamos a generar estáticos
+    generate_static_site()
