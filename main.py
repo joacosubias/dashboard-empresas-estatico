@@ -6,41 +6,26 @@ import requests
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 from matplotlib.ticker import FuncFormatter
+import google.generativeai as genai # Nuevo: para Gemini
+import os # Asegurarse de que os esté importado para variables de entorno
 
-# Asegúrate de que esta carpeta exista
+# --- Configurar la API de Gemini ---
+# Asegúrate de haber configurado GEMINI_API_KEY en los Secrets de Replit
+try:
+    genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+except KeyError:
+    print("Error: GEMINI_API_KEY no está configurada en los Secrets de Replit.")
+    print("Por favor, ve al icono del candado en Replit y añade GEMINI_API_KEY con tu clave de Gemini.")
+    exit() # Sale del script si la clave no está configurada
+
+# Asegúrate de que estas carpetas existan
 if not os.path.exists('public/img'):
     os.makedirs('public/img')
-
-# Asegúrate de que esta carpeta exista
 if not os.path.exists('public/css'):
     os.makedirs('public/css')
 
 # Configurar el entorno Jinja2
 env = Environment(loader=FileSystemLoader('templates'))
-
-# --- Función para obtener resumen de Wikipedia ---
-def get_wikipedia_summary(company_name):
-    try:
-        # Intenta primero con la API de Wikipedia en español
-        url = f"https://es.wikipedia.org/api/rest_v1/page/summary/{company_name.replace(' ', '_')}"
-        response = requests.get(url, timeout=5)
-        response.raise_for_status()
-        data = response.json()
-        if 'extract' in data:
-            return data['extract']
-
-        # Si no se encuentra en español, intenta con la API en inglés
-        url_en = f"https://en.wikipedia.org/api/rest_v1/page/summary/{company_name.replace(' ', '_')}"
-        response_en = requests.get(url_en, timeout=5)
-        response_en.raise_for_status()
-        data_en = response_en.json()
-        if 'extract' in data_en:
-            return data_en['extract']
-
-        return "Resumen no disponible."
-    except requests.exceptions.RequestException as e:
-        print(f"Error al obtener resumen de Wikipedia para {company_name}: {e}")
-        return "Resumen no disponible."
 
 # --- Función para formatear valores financieros ---
 def format_financial_value(value):
@@ -62,27 +47,69 @@ def generate_chart(data, title, filename, y_label='Precio de Cierre', period='1y
         return False
 
     plt.figure(figsize=(10, 6))
-    plt.plot(data.index, data['Close'], color='#4CAF50') # Color verde para la línea
-    plt.title(title, color='#333333', fontsize=16) # Título en gris oscuro
-    plt.xlabel('Fecha', color='#555555') # Etiquetas en gris medio
+    plt.plot(data.index, data['Close'], color='#4CAF50')
+    plt.title(title, color='#333333', fontsize=16)
+    plt.xlabel('Fecha', color='#555555')
     plt.ylabel(y_label, color='#555555')
-    plt.grid(True, linestyle='--', alpha=0.7) # Cuadrícula sutil
+    plt.grid(True, linestyle='--', alpha=0.7)
 
-    plt.gca().set_facecolor('#F9F9F9') # Fondo del área del gráfico en gris claro
-    plt.gcf().set_facecolor('#FFFFFF') # Fondo de la figura en blanco
+    plt.gca().set_facecolor('#F9F9F9')
+    plt.gcf().set_facecolor('#FFFFFF')
 
-    # Formatear el eje Y como moneda (ej. $100, $200)
     formatter = FuncFormatter(lambda x, p: f'${x:,.0f}')
     plt.gca().yaxis.set_major_formatter(formatter)
 
-    # Rotar las etiquetas del eje X si hay muchas
-    plt.xticks(rotation=45, ha='right', color='#555555') # Etiquetas en gris medio
-    plt.yticks(color='#555555') # Etiquetas en gris medio
+    plt.xticks(rotation=45, ha='right', color='#555555')
+    plt.yticks(color='#555555')
 
     plt.tight_layout()
     plt.savefig(f'public/img/{filename}')
     plt.close()
     return True
+
+# --- NUEVO CÓDIGO: Función para obtener noticias con Gemini ---
+def get_news_summary_with_gemini(company_name, ticker, max_links=3):
+    model = genai.GenerativeModel('gemini-pro')
+
+    # Intenta obtener noticias de Yahoo Finance usando yfinance
+    try:
+        stock = yf.Ticker(ticker)
+        news_items = stock.news
+
+        # Filtra y formatea las noticias para el prompt de Gemini
+        relevant_news_for_gemini = []
+        news_links = []
+        count = 0
+        for news_item in news_items:
+            if count >= max_links: # Limitar a un máximo de noticias para el prompt
+                break
+            # Asegurarse de que las noticias tengan título y enlace
+            if news_item.get('title') and news_item.get('link'):
+                relevant_news_for_gemini.append(f"Título: {news_item['title']}\nEnlace: {news_item['link']}")
+                news_links.append({'title': news_item['title'], 'url': news_item['link'], 'publisher': news_item.get('publisher', 'N/A')})
+                count += 1
+
+        if not relevant_news_for_gemini:
+            return "No se encontraron noticias recientes relevantes.", []
+
+        # Construir el prompt para Gemini
+        prompt = (
+            f"Basado en los siguientes titulares y enlaces de noticias sobre {company_name} ({ticker}), "
+            f"por favor, genera un resumen conciso y objetivo de las noticias más relevantes. "
+            f"El resumen debe tener entre 2 y 4 oraciones. No menciones que las noticias son de Yahoo Finance. "
+            f"A continuación, se listan los titulares y enlaces (no incluyas estos detalles en el resumen, solo su contenido):\n\n"
+            + "\n\n".join(relevant_news_for_gemini)
+        )
+
+        # Generar el resumen con Gemini
+        response = model.generate_content(prompt)
+        summary = response.text
+        return summary, news_links # Devolvemos el resumen y la lista de enlaces
+
+    except Exception as e:
+        print(f"Error al obtener noticias o generar resumen con Gemini para {company_name}: {e}")
+        return "No se pudieron obtener noticias o generar un resumen para esta empresa.", []
+
 
 # --- Función principal para generar el sitio estático ---
 def generate_static_site():
@@ -92,7 +119,7 @@ def generate_static_site():
         tickers = [line.strip() for line in f if line.strip()]
 
     all_company_data = []
-    all_companies_summary = [] # Lista para los datos de la tabla resumen
+    all_companies_summary = []
 
     for ticker in tickers:
         print(f"Procesando {ticker}...")
@@ -107,13 +134,17 @@ def generate_static_site():
             industry = info.get('industry', 'N/A')
             current_price = info.get('regularMarketPrice')
 
-            # --- Resumen de Wikipedia ---
-            wikipedia_summary = get_wikipedia_summary(company_name)
+            # --- Eliminado: Resumen de Wikipedia ---
+            # wikipedia_summary = get_wikipedia_summary(company_name) # ESTA LÍNEA SE ELIMINA
+
+            # --- NUEVO: Obtener resumen de noticias con Gemini ---
+            news_summary, news_articles_list = get_news_summary_with_gemini(company_name, ticker, max_links=3)
+
 
             # --- Precios históricos para variación ---
-            price_6m_ago = hist['Close'].iloc[-126] if len(hist) >= 126 else None # Aprox 6 meses (126 días hábiles)
-            price_1y_ago = hist['Close'].iloc[-252] if len(hist) >= 252 else None # Aprox 1 año (252 días hábiles)
-            price_5y_ago = hist['Close'].iloc[0] if len(hist) >= 1260 else None # Aprox 5 años (1260 días hábiles)
+            price_6m_ago = hist['Close'].iloc[-126] if len(hist) >= 126 else None
+            price_1y_ago = hist['Close'].iloc[-252] if len(hist) >= 252 else None
+            price_5y_ago = hist['Close'].iloc[0] if len(hist) >= 1260 else None
 
             # --- Variaciones porcentuales ---
             change_6m = None
@@ -128,9 +159,7 @@ def generate_static_site():
             if current_price and price_5y_ago is not None and price_5y_ago != 0:
                 change_5y = ((current_price - price_5y_ago) / price_5y_ago) * 100
 
-            # --- Datos financieros (Balance Sheet / Income Statement) ---
-            # Asegúrate de que los datos financieros se obtengan correctamente
-            # Aquí un ejemplo de cómo obtenerlos si no los tienes
+            # --- Datos financieros ---
             try:
                 financials = stock.financials
                 operating_income = financials.loc['Operating Income'][0] if 'Operating Income' in financials.index else None
@@ -148,29 +177,23 @@ def generate_static_site():
                 ebitda = None
 
             # --- Generación de gráficos ---
-            # Ajustar los periodos para que los gráficos tengan sentido si no hay 5y de historia
             hist_1y = stock.history(period="1y")
             hist_6m = stock.history(period="6mo")
-            hist_5y = stock.history(period="5y") # Mantener para la variación, aunque el gráfico sea solo de 1y
+            hist_5y = stock.history(period="5y")
 
             generate_chart(hist_6m, f'Precio de Cierre (6 Meses) - {ticker}', f'{ticker}_6m.png', period='6mo')
             generate_chart(hist_1y, f'Precio de Cierre (1 Año) - {ticker}', f'{ticker}_1y.png', period='1y')
             generate_chart(hist_5y, f'Precio de Cierre (5 Años) - {ticker}', f'{ticker}_5y.png', period='5y')
 
-            # --- Datos para el gráfico financiero ---
-            # Obtener datos de ingresos y beneficio para el gráfico financiero
             if not financials.empty:
-                # Usar transpose() para que las fechas sean el índice si no lo son
-                # Y seleccionar las últimas 4 columnas (años) para el gráfico
                 financial_data_for_plot = financials.loc[['Operating Income', 'Net Income']].transpose().iloc[:4]
                 if not financial_data_for_plot.empty:
                     plt.figure(figsize=(10, 6))
-                    financial_data_for_plot.plot(kind='bar', ax=plt.gca(), color=['#66BB6A', '#FFA726']) # Colores amigables
+                    financial_data_for_plot.plot(kind='bar', ax=plt.gca(), color=['#66BB6A', '#FFA726'])
                     plt.title(f'Ingresos y Beneficios Netos - {ticker}', color='#333333', fontsize=16)
                     plt.xlabel('Año', color='#555555')
                     plt.ylabel('Valor ($)', color='#555555')
 
-                    # Formatear el eje Y como moneda en millones o billones
                     formatter = FuncFormatter(lambda x, p: format_financial_value(x))
                     plt.gca().yaxis.set_major_formatter(formatter)
 
@@ -188,8 +211,7 @@ def generate_static_site():
                 print(f"No hay datos financieros para generar el gráfico: {ticker}")
 
             # --- Determinar el color del semáforo para la tabla ---
-            # Basado en la variación de 1 año. Ajusta los umbrales si lo deseas.
-            semaphore_color = "gray"  # Default
+            semaphore_color = "gray"
             if change_1y is not None:
                 if change_1y >= 20:
                     semaphore_color = "green"
@@ -211,7 +233,8 @@ def generate_static_site():
                 'operating_income': format_financial_value(operating_income),
                 'net_income': format_financial_value(net_income),
                 'ebitda': format_financial_value(ebitda),
-                'wikipedia_summary': wikipedia_summary,
+                'news_summary': news_summary, # NUEVO: Resumen de noticias de Gemini
+                'news_articles': news_articles_list # NUEVO: Lista de enlaces de noticias
             })
 
             # --- Datos específicos para la tabla resumen ---
@@ -227,7 +250,6 @@ def generate_static_site():
 
         except Exception as e:
             print(f"Error procesando {ticker}: {e}")
-            # Añadir datos básicos con "N/A" si hay un error para que la tabla no se rompa
             all_company_data.append({
                 'ticker': ticker,
                 'name': f"{ticker} (Error)",
@@ -235,7 +257,8 @@ def generate_static_site():
                 'current_price': 'N/A', 'change_6m': 'N/A',
                 'change_1y': 'N/A', 'change_5y': 'N/A',
                 'operating_income': 'N/A', 'net_income': 'N/A', 'ebitda': 'N/A',
-                'wikipedia_summary': 'No se pudieron obtener datos para esta empresa debido a un error.',
+                'news_summary': 'No se pudieron obtener datos o un resumen de noticias para esta empresa debido a un error.',
+                'news_articles': []
             })
             all_companies_summary.append({
                 'ticker': ticker,
@@ -246,14 +269,14 @@ def generate_static_site():
             })
 
 
-    # --- Generar el archivo CSS principal ---
+    # --- Generar el archivo CSS principal (sin cambios aquí) ---
     css_content = """
     body {
         font-family: 'Helvetica Neue', Arial, sans-serif;
         margin: 0;
         padding: 20px;
-        background-color: #F8F8F8; /* Gris muy claro */
-        color: #333333; /* Gris oscuro para texto principal */
+        background-color: #F8F8F8;
+        color: #333333;
         line-height: 1.6;
     }
 
@@ -261,22 +284,21 @@ def generate_static_site():
         max-width: 1200px;
         margin: 20px auto;
         padding: 20px;
-        background-color: #FFFFFF; /* Fondo blanco */
+        background-color: #FFFFFF;
         border-radius: 8px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05); /* Sombra sutil */
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     }
 
     h1, h2, h3 {
-        color: #222222; /* Gris casi negro para títulos */
+        color: #222222;
         text-align: center;
         margin-bottom: 25px;
-        font-weight: 300; /* Fuente más ligera */
+        font-weight: 300;
     }
 
-    /* Estilos de la tabla resumen */
     .summary-table {
         width: 100%;
-        border-collapse: collapse; /* Eliminar bordes dobles */
+        border-collapse: collapse;
         margin-bottom: 40px;
         font-size: 0.9em;
         background-color: #FFFFFF;
@@ -286,61 +308,60 @@ def generate_static_site():
     .summary-table th, .summary-table td {
         padding: 12px 15px;
         text-align: left;
-        border-bottom: 1px solid #EEEEEE; /* Líneas divisorias suaves */
+        border-bottom: 1px solid #EEEEEE;
     }
 
     .summary-table th {
-        background-color: #F2F2F2; /* Gris claro para encabezados */
-        color: #555555; /* Gris medio para texto de encabezado */
+        background-color: #F2F2F2;
+        color: #555555;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.05em;
     }
 
     .summary-table tbody tr:hover {
-        background-color: #FDFDFD; /* Ligero resaltado al pasar el ratón */
+        background-color: #FDFDFD;
     }
 
     .summary-table .change-positive {
-        color: #28a745; /* Verde para positivo */
+        color: #28a745;
         font-weight: bold;
     }
 
     .summary-table .change-negative {
-        color: #dc3545; /* Rojo para negativo */
+        color: #dc3545;
         font-weight: bold;
     }
 
     .summary-table .change-neutral {
-        color: #6c757d; /* Gris para neutral o sin cambio */
+        color: #6c757d;
+        font-weight: bold;
     }
 
-    /* Colores del semáforo */
     .semaphore-red {
-        background-color: #ffe0e0; /* Rojo claro */
-        border-left: 5px solid #dc3545; /* Barra lateral roja */
+        background-color: #ffe0e0;
+        border-left: 5px solid #dc3545;
     }
     .semaphore-yellow {
-        background-color: #fff9e0; /* Amarillo claro */
-        border-left: 5px solid #ffc107; /* Barra lateral amarilla */
+        background-color: #fff9e0;
+        border-left: 5px solid #ffc107;
     }
     .semaphore-green {
-        background-color: #e0ffe0; /* Verde claro */
-        border-left: 5px solid #28a745; /* Barra lateral verde */
+        background-color: #e0ffe0;
+        border-left: 5px solid #28a745;
     }
     .semaphore-gray {
-        background-color: #f0f0f0; /* Gris muy claro */
-        border-left: 5px solid #cccccc; /* Barra lateral gris */
+        background-color: #f0f0f0;
+        border-left: 5px solid #cccccc;
     }
 
-    /* Estilos para las secciones de empresas individuales */
     .company-section {
         background-color: #FFFFFF;
         padding: 30px;
         margin-bottom: 30px;
         border-radius: 8px;
         box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-        border-top: 5px solid #6c757d; /* Borde superior gris */
+        border-top: 5px solid #6c757d;
     }
 
     .company-section h3 {
@@ -400,7 +421,7 @@ def generate_static_site():
     }
 
     .news-item a {
-        color: #007BFF; /* Azul para enlaces */
+        color: #007BFF;
         text-decoration: none;
         font-weight: 500;
     }

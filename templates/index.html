@@ -19,7 +19,8 @@
                     <th>Var. 6M</th>
                     <th>Var. 1 Año</th>
                     <th>Var. 5 Años</th>
-                    <th>Estado</th> </tr>
+                    <th>Estado</th>
+                </tr>
             </thead>
             <tbody>
                 {% for company in all_companies_summary %}
@@ -40,7 +41,8 @@
                         {{ company.change_5y }}
                     </td>
                     <td>
-                        <span style="font-size: 1.5em;">&#9679;</span> </td>
+                        <span style="font-size: 1.5em;">&#9679;</span>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -78,25 +80,36 @@
                     </div>
                 </div>
 
-                {% if company.news_articles %}
                 <div class="news-section">
-                    <h4>Últimas Noticias</h4>
-                    {% for article in company.news_articles %}
-                    <div class="news-item">
-                        <a href="{{ article.url }}" target="_blank">{{ article.title }}</a>
-                        <p>{{ article.description }}</p>
-                        <p><span class="source">Fuente: {{ article.source.name }}</span></p>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% endif %}
+                    <h4>Noticias Recientes</h4>
+                    {% if company.news_summary %}
+                        <p>{{ company.news_summary }}</p>
+                    {% else %}
+                        <p>No se pudo obtener un resumen de noticias para esta empresa.</p>
+                    {% endif %}
 
+                    {% if company.news_articles %}
+                        <ul>
+                            {% for article in company.news_articles[:3] %} {# Limitar a 3 enlaces aquí #}
+                                <li>
+                                    <a href="{{ article.url }}" target="_blank">{{ article.title }}</a>
+                                    {% if article.publisher %}<span class="source"> ({{ article.publisher }})</span>{% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p>No hay enlaces de noticias disponibles.</p>
+                    {% endif %}
+                </div>
+
+                {#
                 {% if company.wikipedia_summary %}
                 <div class="wikipedia-summary-section">
                     <h4>Resumen de Wikipedia</h4>
                     <p>{{ company.wikipedia_summary }}</p>
                 </div>
                 {% endif %}
+                #}
             </div>
             {% endfor %}
         {% else %}
@@ -105,7 +118,7 @@
     </div>
 
     <footer>
-        <p>Datos obtenidos de Yahoo Finance y Wikipedia. Generado por tu script Python.</p>
+        <p>Datos obtenidos de Yahoo Finance. Resúmenes de noticias generados por Google Gemini.</p>
     </footer>
 </body>
 </html>

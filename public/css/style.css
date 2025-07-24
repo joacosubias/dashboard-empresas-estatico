@@ -3,8 +3,8 @@
         font-family: 'Helvetica Neue', Arial, sans-serif;
         margin: 0;
         padding: 20px;
-        background-color: #F8F8F8; /* Gris muy claro */
-        color: #333333; /* Gris oscuro para texto principal */
+        background-color: #F8F8F8;
+        color: #333333;
         line-height: 1.6;
     }
 
@@ -12,22 +12,21 @@
         max-width: 1200px;
         margin: 20px auto;
         padding: 20px;
-        background-color: #FFFFFF; /* Fondo blanco */
+        background-color: #FFFFFF;
         border-radius: 8px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05); /* Sombra sutil */
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     }
 
     h1, h2, h3 {
-        color: #222222; /* Gris casi negro para títulos */
+        color: #222222;
         text-align: center;
         margin-bottom: 25px;
-        font-weight: 300; /* Fuente más ligera */
+        font-weight: 300;
     }
 
-    /* Estilos de la tabla resumen */
     .summary-table {
         width: 100%;
-        border-collapse: collapse; /* Eliminar bordes dobles */
+        border-collapse: collapse;
         margin-bottom: 40px;
         font-size: 0.9em;
         background-color: #FFFFFF;
@@ -37,61 +36,60 @@
     .summary-table th, .summary-table td {
         padding: 12px 15px;
         text-align: left;
-        border-bottom: 1px solid #EEEEEE; /* Líneas divisorias suaves */
+        border-bottom: 1px solid #EEEEEE;
     }
 
     .summary-table th {
-        background-color: #F2F2F2; /* Gris claro para encabezados */
-        color: #555555; /* Gris medio para texto de encabezado */
+        background-color: #F2F2F2;
+        color: #555555;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.05em;
     }
 
     .summary-table tbody tr:hover {
-        background-color: #FDFDFD; /* Ligero resaltado al pasar el ratón */
+        background-color: #FDFDFD;
     }
 
     .summary-table .change-positive {
-        color: #28a745; /* Verde para positivo */
+        color: #28a745;
         font-weight: bold;
     }
 
     .summary-table .change-negative {
-        color: #dc3545; /* Rojo para negativo */
+        color: #dc3545;
         font-weight: bold;
     }
 
     .summary-table .change-neutral {
-        color: #6c757d; /* Gris para neutral o sin cambio */
+        color: #6c757d;
+        font-weight: bold;
     }
 
-    /* Colores del semáforo */
     .semaphore-red {
-        background-color: #ffe0e0; /* Rojo claro */
-        border-left: 5px solid #dc3545; /* Barra lateral roja */
+        background-color: #ffe0e0;
+        border-left: 5px solid #dc3545;
     }
     .semaphore-yellow {
-        background-color: #fff9e0; /* Amarillo claro */
-        border-left: 5px solid #ffc107; /* Barra lateral amarilla */
+        background-color: #fff9e0;
+        border-left: 5px solid #ffc107;
     }
     .semaphore-green {
-        background-color: #e0ffe0; /* Verde claro */
-        border-left: 5px solid #28a745; /* Barra lateral verde */
+        background-color: #e0ffe0;
+        border-left: 5px solid #28a745;
     }
     .semaphore-gray {
-        background-color: #f0f0f0; /* Gris muy claro */
-        border-left: 5px solid #cccccc; /* Barra lateral gris */
+        background-color: #f0f0f0;
+        border-left: 5px solid #cccccc;
     }
 
-    /* Estilos para las secciones de empresas individuales */
     .company-section {
         background-color: #FFFFFF;
         padding: 30px;
         margin-bottom: 30px;
         border-radius: 8px;
         box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-        border-top: 5px solid #6c757d; /* Borde superior gris */
+        border-top: 5px solid #6c757d;
     }
 
     .company-section h3 {
@@ -151,7 +149,7 @@
     }
 
     .news-item a {
-        color: #007BFF; /* Azul para enlaces */
+        color: #007BFF;
         text-decoration: none;
         font-weight: 500;
     }
