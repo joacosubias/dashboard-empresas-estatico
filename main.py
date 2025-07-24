@@ -6,17 +6,23 @@ import requests
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 from matplotlib.ticker import FuncFormatter
-import google.generativeai as genai # Nuevo: para Gemini
-import os # Asegurarse de que os esté importado para variables de entorno
+import google.generativeai as genai
+from newsapi import NewsApiClient
 
-# --- Configurar la API de Gemini ---
-# Asegúrate de haber configurado GEMINI_API_KEY en los Secrets de Replit
+# --- Configurar las APIs ---
 try:
     genai.configure(api_key=os.environ["GEMINI_API_KEY"])
 except KeyError:
     print("Error: GEMINI_API_KEY no está configurada en los Secrets de Replit.")
     print("Por favor, ve al icono del candado en Replit y añade GEMINI_API_KEY con tu clave de Gemini.")
-    exit() # Sale del script si la clave no está configurada
+    exit()
+
+try:
+    newsapi = NewsApiClient(api_key=os.environ["NEWSAPI_API_KEY"])
+except KeyError:
+    print("Error: NEWSAPI_API_KEY no está configurada en los Secrets de Replit.")
+    print("Por favor, ve al icono del candado en Replit y añade NEWSAPI_API_KEY con tu clave de NewsAPI.")
+    exit()
 
 # Asegúrate de que estas carpetas existan
 if not os.path.exists('public/img'):
@@ -36,7 +42,7 @@ def format_financial_value(value):
     elif abs(value) >= 1_000_000:
         return f"${value / 1_000_000:,.2f}M"
     elif abs(value) >= 1_000:
-        return f"${value / 1_000:,.2f}K"
+        return f"${value:,.2f}"
     else:
         return f"${value:,.2f}"
 
@@ -67,48 +73,123 @@ def generate_chart(data, title, filename, y_label='Precio de Cierre', period='1y
     plt.close()
     return True
 
-# --- NUEVO CÓDIGO: Función para obtener noticias con Gemini ---
-def get_news_summary_with_gemini(company_name, ticker, max_links=3):
-    model = genai.GenerativeModel('gemini-pro')
+# --- Función para obtener noticias con NewsAPI y resumir con Gemini ---
+# Se le pasan más parámetros para el análisis en el prompt
+def get_news_summary_with_gemini(company_name, ticker, max_links=3, current_price=None, change_1y=None, operating_income=None, net_income=None):
+    # Usar 'gemini-1.5-flash' para mayor disponibilidad y eficiencia
+    model = genai.GenerativeModel('gemini-1.5-flash')
 
-    # Intenta obtener noticias de Yahoo Finance usando yfinance
+    news_links = []
+
     try:
-        stock = yf.Ticker(ticker)
-        news_items = stock.news
+        # Búsqueda de noticias usando NewsAPI
+        articles = newsapi.get_everything(
+            q=f'"{company_name}" OR "{ticker} stock"',
+            language='en', # Noticas en inglés
+            sort_by='relevancy',
+            page_size=max_links * 5 # Traemos más por si filtramos algunos
+        )
 
-        # Filtra y formatea las noticias para el prompt de Gemini
-        relevant_news_for_gemini = []
-        news_links = []
+        # --- DEBUGGING NEWSAPI ---
+        print(f"DEBUG: NewsAPI encontró {articles['totalResults']} artículos para {company_name} ({ticker}).")
+        if articles['totalResults'] == 0:
+            print(f"DEBUG: NewsAPI no encontró ningún artículo. No hay nada para filtrar.")
+        else:
+            print(f"DEBUG: Primeros 5 títulos de NewsAPI:")
+            for i, article in enumerate(articles['articles'][:5]):
+                print(f"  - {i+1}: {article.get('title', 'Sin título')} (Fuente: {article.get('source', {}).get('name', 'N/A')})")
+        # --- FIN DEBUGGING NEWSAPI ---
+
+        relevant_news_for_gemini_prompt = []
         count = 0
-        for news_item in news_items:
-            if count >= max_links: # Limitar a un máximo de noticias para el prompt
-                break
-            # Asegurarse de que las noticias tengan título y enlace
-            if news_item.get('title') and news_item.get('link'):
-                relevant_news_for_gemini.append(f"Título: {news_item['title']}\nEnlace: {news_item['link']}")
-                news_links.append({'title': news_item['title'], 'url': news_item['link'], 'publisher': news_item.get('publisher', 'N/A')})
-                count += 1
+        if articles and articles['articles']:
+            for article in articles['articles']:
+                if count >= max_links:
+                    break
+                # Filtramos artículos sin título o URL
+                if article.get('title') and article.get('url'):
+                    relevant_news_for_gemini_prompt.append(f"Título: {article['title']}\nFuente: {article.get('source', {}).get('name', 'N/A')}\nEnlace: {article['url']}")
+                    news_links.append({
+                        'title': article['title'],
+                        'url': article['url'],
+                        'publisher': article.get('source', {}).get('name', 'N/A')
+                    })
+                    count += 1
 
-        if not relevant_news_for_gemini:
-            return "No se encontraron noticias recientes relevantes.", []
+        if not relevant_news_for_gemini_prompt:
+            raise ValueError("NewsAPI no encontró artículos relevantes después de filtrar.")
 
-        # Construir el prompt para Gemini
+        # Construir la información financiera para el prompt
+        financial_info_for_prompt = []
+        if current_price is not None:
+            financial_info_for_prompt.append(f"Precio actual de la acción: ${current_price:.2f}")
+        if change_1y is not None:
+            financial_info_for_prompt.append(f"Cambio porcentual en el último año: {change_1y:.2f}%")
+        if operating_income is not None:
+            financial_info_for_prompt.append(f"Ingresos operativos más recientes: {format_financial_value(operating_income)}")
+        if net_income is not None:
+            financial_info_for_prompt.append(f"Ingreso neto más reciente: {format_financial_value(net_income)}")
+
+        financial_info_text = ""
+        if financial_info_for_prompt:
+            financial_info_text = "\n\nInformación financiera clave:\n- " + "\n- ".join(financial_info_for_prompt)
+
+
+        # Construir el prompt para Gemini (ahora en español y con datos financieros)
         prompt = (
-            f"Basado en los siguientes titulares y enlaces de noticias sobre {company_name} ({ticker}), "
-            f"por favor, genera un resumen conciso y objetivo de las noticias más relevantes. "
-            f"El resumen debe tener entre 2 y 4 oraciones. No menciones que las noticias son de Yahoo Finance. "
-            f"A continuación, se listan los titulares y enlaces (no incluyas estos detalles en el resumen, solo su contenido):\n\n"
-            + "\n\n".join(relevant_news_for_gemini)
+            f"Basado en los siguientes titulares de noticias y la información financiera proporcionada sobre {company_name} ({ticker}), "
+            f"genera un resumen conciso y objetivo en **español**. "
+            f"El resumen debe tener entre 3 y 5 oraciones. "
+            f"Debe cubrir las noticias más relevantes y, si la información está disponible, incluir un breve análisis del rendimiento de las acciones y/o los ingresos en relación con las noticias.\n"
+            f"No menciones la fuente específica de las noticias en el resumen final. Si no hay noticias, o no hay información financiera, simplemente omite esa parte del análisis.\n\n"
+            f"Noticias:\n"
+            + "\n\n".join(relevant_news_for_gemini_prompt)
+            + financial_info_text
         )
 
         # Generar el resumen con Gemini
         response = model.generate_content(prompt)
         summary = response.text
-        return summary, news_links # Devolvemos el resumen y la lista de enlaces
+        return summary, news_links
 
     except Exception as e:
         print(f"Error al obtener noticias o generar resumen con Gemini para {company_name}: {e}")
-        return "No se pudieron obtener noticias o generar un resumen para esta empresa.", []
+        # En caso de error (ya sea de NewsAPI o de Gemini), intentamos una última vez con Yahoo Finance como fallback
+        try:
+            stock_yf = yf.Ticker(ticker)
+            yf_news_items = stock_yf.news
+            yf_news_for_gemini_prompt = []
+            yf_news_links = []
+            count_yf = 0
+            for news_item in yf_news_items:
+                if count_yf >= max_links:
+                    break
+                if news_item.get('title') and news_item.get('link'):
+                    yf_news_for_gemini_prompt.append(f"Título: {news_item['title']}\nEnlace: {news_item['link']}")
+                    yf_news_links.append({'title': news_item['title'], 'url': news_item['link'], 'publisher': news_item.get('publisher', 'N/A')})
+                    count_yf += 1
+
+            if yf_news_for_gemini_prompt:
+                # Prompt de fallback para Yahoo Finance (también en español y con datos financieros)
+                prompt_yf = (
+                    f"Basado en los siguientes titulares de noticias y la información financiera proporcionada sobre {company_name} ({ticker}), "
+                    f"genera un resumen conciso y objetivo en **español**. "
+                    f"El resumen debe tener entre 2 y 4 oraciones. "
+                    f"Debe cubrir las noticias más relevantes y, si la información está disponible, incluir un breve análisis del rendimiento de las acciones y/o los ingresos en relación con las noticias.\n"
+                    f"A continuación, se listan los titulares:\n\n"
+                    + "\n\n".join(yf_news_for_gemini_prompt)
+                    + financial_info_text # Incluir info financiera también en el fallback
+                )
+                response_yf = model.generate_content(prompt_yf)
+                summary_yf = response_yf.text
+                print(f"DEBUG: Fallback a Yahoo Finance para {company_name}. Resumen generado.")
+                return summary_yf, yf_news_links
+            else:
+                return "No se pudieron obtener noticias de la web ni de Yahoo Finance para esta empresa.", []
+
+        except Exception as fallback_e:
+            print(f"Error en el fallback de Yahoo Finance para {company_name}: {fallback_e}")
+            return "No se pudieron obtener noticias o generar un resumen para esta empresa.", []
 
 
 # --- Función principal para generar el sitio estático ---
@@ -128,18 +209,10 @@ def generate_static_site():
             info = stock.info
             hist = stock.history(period="5y")
 
-            # --- Datos de la empresa ---
             company_name = info.get('longName', ticker)
             sector = info.get('sector', 'N/A')
             industry = info.get('industry', 'N/A')
             current_price = info.get('regularMarketPrice')
-
-            # --- Eliminado: Resumen de Wikipedia ---
-            # wikipedia_summary = get_wikipedia_summary(company_name) # ESTA LÍNEA SE ELIMINA
-
-            # --- NUEVO: Obtener resumen de noticias con Gemini ---
-            news_summary, news_articles_list = get_news_summary_with_gemini(company_name, ticker, max_links=3)
-
 
             # --- Precios históricos para variación ---
             price_6m_ago = hist['Close'].iloc[-126] if len(hist) >= 126 else None
@@ -175,6 +248,18 @@ def generate_static_site():
             except Exception as e:
                 print(f"Error al obtener datos de flujo de caja para {ticker}: {e}")
                 ebitda = None
+
+            # --- OBTENER RESUMEN DE NOTICIAS DE LA WEB (NewsAPI + Gemini) ---
+            # PASAMOS LOS DATOS FINANCIEROS Y DE PRECIOS A LA FUNCIÓN DE RESUMEN
+            news_summary, news_articles_list = get_news_summary_with_gemini(
+                company_name=company_name,
+                ticker=ticker,
+                max_links=3,
+                current_price=current_price,
+                change_1y=change_1y,
+                operating_income=operating_income,
+                net_income=net_income
+            )
 
             # --- Generación de gráficos ---
             hist_1y = stock.history(period="1y")
@@ -233,8 +318,8 @@ def generate_static_site():
                 'operating_income': format_financial_value(operating_income),
                 'net_income': format_financial_value(net_income),
                 'ebitda': format_financial_value(ebitda),
-                'news_summary': news_summary, # NUEVO: Resumen de noticias de Gemini
-                'news_articles': news_articles_list # NUEVO: Lista de enlaces de noticias
+                'news_summary': news_summary,
+                'news_articles': news_articles_list
             })
 
             # --- Datos específicos para la tabla resumen ---
