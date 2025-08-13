@@ -173,7 +173,7 @@ def get_news_summary_with_gemini(company_name, ticker, max_links=3, current_pric
             f"Basado en los siguientes titulares de noticias y la información financiera proporcionada sobre {company_name} ({ticker}), "
             f"genera un resumen conciso y objetivo en **español**. "
             f"El resumen debe tener entre 3 y 5 oraciones. "
-            f"Debe cubrir las noticias más relevantes, en caso de encontrar noticias sobre deuda/solvenica incluirla en el resumen y, si la información está disponible, incluir un breve análisis del rendimiento de las acciones y/o los ingresos y/o deuda y capacidad de repago en relación con las noticias.\n"
+            f"El resumen debe primero incluir noticias sobre expansion/reduccion del negocio o unidades del negocio, como compra o venta de activos o fusiones con otras empresas. Debe incluir si hubo algun cambio en su rating de credito. Debe incluir algun analisis de la accion y la comparacion de su precio contra en consenso. Debe cubrir las noticias más relevantes, en caso de encontrar noticias sobre deuda/solvenica incluirla en el resumen y, si la información está disponible, incluir un breve análisis del rendimiento de las acciones y/o los ingresos y/o deuda y capacidad de repago en relación con las noticias.\n"
             f"No menciones la fuente específica de las noticias en el resumen final. Si no hay noticias, o no hay información financiera, simplemente omite esa parte del análisis.\n\n"
             f"Noticias:\n"
             + "\n\n".join(relevant_news_for_gemini_prompt)
